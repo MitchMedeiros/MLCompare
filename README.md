@@ -1,6 +1,6 @@
 # Overview
 
-This project seeks to compare multiple different machine learning models on the same dataset and provide a description of each through visualizations with Plotly Dash.
+This project seeks to compare perform a meta-study of multiple different machine learning models across publicly available datasets on Kaggle. The results and details of the data sources are described through visualizations with Plotly Dash.
 
 The models compared are:
 
@@ -10,4 +10,5 @@ The models compared are:
 
 ## Dataset
 
-The dataset used is <a href="https://www.kaggle.com/datasets/anthonytherrien/restaurant-revenue-prediction-dataset/data">Restaurant Revenue Prediction Dataset</a> on Kaggle. 
+The dataset used for model comparison are:
+- <a href="https://www.kaggle.com/datasets/anthonytherrien/restaurant-revenue-prediction-dataset/data">Restaurant Revenue Prediction Dataset</a>. 
