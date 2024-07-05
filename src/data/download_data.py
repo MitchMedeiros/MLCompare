@@ -4,36 +4,14 @@ from pathlib import Path
 from typing import Any
 
 from data_processor import DataProcessor
-from pydantic import BaseModel
+from kaggle_dataset import KaggleDataset, kaggle_dataset_params
 
+# Add the project source directory to the system path for importing utils
 src_dir = Path(__file__).resolve().parents[2].as_posix()
 sys.path.append(src_dir)
 import utils  # noqa: E402
 
 logger = logging.getLogger(__name__)
-
-
-class KaggleDataset(BaseModel):
-    """
-    Represents a Kaggle dataset.
-
-    Attributes:
-        username (str): The username of the Kaggle user who owns the dataset.
-        dataset_name (str): The name of the Kaggle dataset.
-        file_name (str): The name of the file associated with the dataset.
-        target_column (str): The name of the target column in the dataset.
-        columns_to_drop (list[str] | None): A list of column names to be dropped from the dataset.
-            If None, no columns will be dropped.
-        columns_to_encode (list[str] | None): A list of column names to be encoded in the dataset.
-            If None, no columns will be encoded.
-    """
-
-    username: str
-    dataset_name: str
-    file_name: str
-    target_column: str
-    columns_to_drop: list[str] | None
-    columns_to_encode: list[str] | None
 
 
 def download_and_process_data(
@@ -68,22 +46,14 @@ def download_and_process_data(
         )
         processor.drop_columns(dataset.columns_to_drop)
         processor.encode_columns(dataset.columns_to_encode)
-        processor.save_data(save_directory / f"{dataset.dataset_name}.{file_format}")
+        processor.save_data(
+            save_directory / f"{dataset.dataset_name}_cleaned.{file_format}",
+            file_format,
+        )
 
 
 if __name__ == "__main__":
     utils.setup_logging()
-
-    kaggle_dataset_params = {
-        "restaurant_revenue": {
-            "username": "anthonytherrien",
-            "dataset_name": "restaurant-revenue-prediction-dataset",
-            "file_name": "restaurant_data.csv",
-            "target_column": "Revenue",
-            "columns_to_drop": ["Name"],
-            "columns_to_encode": ["Location", "Cuisine", "Parking Availability"],
-        },
-    }
 
     save_directory = Path(__file__).parent.resolve() / "saved_data"
     file_format = "parquet"

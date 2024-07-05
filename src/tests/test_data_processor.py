@@ -172,6 +172,39 @@ class TestDataProcessor(unittest.TestCase):
 
         save_path.unlink()
 
+    def test_download_format_and_save_parquet_data_from_dict(self):
+        kaggle_dataset_params = {
+            "username": "anthonytherrien",
+            "dataset_name": "restaurant-revenue-prediction-dataset",
+            "file_name": "restaurant_data.csv",
+            "target_column": "Revenue",
+            "columns_to_drop": ["Name"],
+            "columns_to_encode": ["Location", "Cuisine", "Parking Availability"],
+        }
+        file_format = "parquet"
+        save_path = (
+            self.current_dir / f"{kaggle_dataset_params['dataset_name']}.{file_format}"
+        )
+        processor = DataProcessor()
+
+        processor.download_kaggle_data(
+            kaggle_dataset_params["username"],
+            kaggle_dataset_params["dataset_name"],
+            kaggle_dataset_params["file_name"],
+        )
+        processor.drop_columns(kaggle_dataset_params["columns_to_drop"])
+        processor.encode_columns(kaggle_dataset_params["columns_to_encode"])
+        processor.save_data(save_path, file_format)
+
+        self.assertTrue(save_path.exists())
+        df = pd.read_parquet(save_path)
+        self.assertTrue(not df.empty)
+        self.assertTrue("Name" not in df.columns)
+        self.assertTrue("Location" not in df.columns)
+        self.assertTrue("Cuisine" not in df.columns)
+
+        save_path.unlink()
+
 
 if __name__ == "__main__":
     unittest.main()
