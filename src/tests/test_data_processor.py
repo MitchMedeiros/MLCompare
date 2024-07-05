@@ -6,10 +6,9 @@ from pathlib import Path
 import pandas as pd
 from kaggle.rest import ApiException
 
-src_dir = Path(__file__).resolve().parents[1].as_posix()
-sys.path.append(src_dir)
-
-from src.data.data_processor import DataProcessor  # noqa: E402
+data_dir = Path(__file__).resolve().parents[1].as_posix()
+sys.path.append(data_dir)
+from data.data_processor import DataProcessor  # noqa: E402
 
 
 class TestDataProcessor(unittest.TestCase):

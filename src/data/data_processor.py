@@ -1,8 +1,7 @@
 import logging
-import pickle
 from io import StringIO
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import kaggle
 import pandas as pd
@@ -69,18 +68,18 @@ class DataProcessor:
 
     def download_kaggle_data(
         self,
-        dataset_owner: str | Sequence[str],
-        dataset_name: str | Sequence[str],
-        data_file_name: str | Sequence[str],
+        dataset_owner: str,
+        dataset_name: str,
+        data_file_name: str,
     ) -> pd.DataFrame:
         """
         Downloads a Kaggle dataset. Overwrites any existing data for the class instance.
         Currently only supports CSV files.
 
         Args:
-            dataset_owner (str or Sequence[str]): The user(s) under which the dataset is provided.
-            dataset_name (str or Sequence[str]): The name(s) of the dataset.
-            data_file_name (str or Sequence[str]): The file(s) to be downloaded from the dataset.
+            dataset_owner (str): The user(s) under which the dataset is provided.
+            dataset_name (str): The name(s) of the dataset.
+            data_file_name (str): The file(s) to be downloaded from the dataset.
 
         Returns:
             pd.DataFrame: The downloaded data as a Pandas DataFrame.
@@ -104,60 +103,60 @@ class DataProcessor:
         self.data = df
         return df
 
-    def drop_columns(self, columns_to_drop: list[str] | Sequence[str]) -> pd.DataFrame:
+    def drop_columns(self, columns_to_drop: list[str] | None) -> pd.DataFrame:
         """
         Drops the specified columns from the DataFrame.
 
         Args:
-            columns_to_drop (list[str] | Sequence[str]): A list of column names to be dropped.
+            columns_to_drop (list[str]): A list of column names to be dropped.
 
         Returns:
             pd.DataFrame: The DataFrame with the specified columns dropped.
         """
-        self.data = self.data.drop(columns_to_drop, axis=1)
-        logger.info(f"Columns dropped: \n {self.data.head(3)}")
+        if columns_to_drop is not None:
+            self.data = self.data.drop(columns_to_drop, axis=1)
+            logger.info(f"Columns dropped: \n {self.data.head(3)}")
 
         return self.data
 
-    def encode_columns(
-        self,
-        columns_to_encode: list[str] | Sequence[str],
-    ) -> pd.DataFrame:
+    def encode_columns(self, columns_to_encode: list[str] | None) -> pd.DataFrame:
         """
         Encodes the specified columns using one-hot encoding and returns the encoded DataFrame.
 
         Args:
-            columns_to_encode (list[str] | Sequence[str]): A list of column names to be encoded.
+            columns_to_encode (list[str]): A list of column names to be encoded.
 
         Returns:
             pd.DataFrame: The DataFrame with the specified columns encoded using one-hot encoding.
         """
-        df = self.data
-        encoder = OneHotEncoder(sparse_output=False)
-        encoded_array = encoder.fit_transform(df[columns_to_encode])
+        if columns_to_encode is not None:
+            df = self.data
+            encoder = OneHotEncoder(sparse_output=False)
+            encoded_array = encoder.fit_transform(df[columns_to_encode])
 
-        # Convert the one-hot encoded ndarray to a DataFrame
-        encoded_df = pd.DataFrame(
-            encoded_array,
-            columns=encoder.get_feature_names_out(columns_to_encode),
-        )
+            # Convert the one-hot encoded ndarray to a DataFrame
+            encoded_df = pd.DataFrame(
+                encoded_array,
+                columns=encoder.get_feature_names_out(columns_to_encode),
+            )
 
-        # Drop the original columns and join the one-hot encoded columns
-        df = df.drop(columns=columns_to_encode).join(encoded_df)
-        logger.info(f"Data successfully encoded: \n {df.head(3)}")
+            # Drop the original columns and join the one-hot encoded columns
+            df = df.drop(columns=columns_to_encode).join(encoded_df)
+            logger.info(f"Data successfully encoded: \n {df.head(3)}")
 
-        self.data = df
-        return df
+            self.data = df
+
+        return self.data
 
     def split_data(
         self,
-        target_column: str | Sequence[str],
+        target_column: str,
         test_size: float = 0.2,
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Split the data into its features and target.
 
         Args:
-            target_column (str | Sequence[str]): The column(s) to be used as the target variable(s).
+            target_column (str): The column(s) to be used as the target variable(s).
 
         Returns:
             tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple containing the training
@@ -180,7 +179,7 @@ class DataProcessor:
 
         return X_train, X_test, y_train, y_test
 
-    def save_data(self, file_path: str | Path | None = None):
+    def save_data(self, file_path: Path | None = None, file_format: str = "pickle"):
         """
         Save the data to a file.
 
@@ -197,8 +196,18 @@ class DataProcessor:
             raise ValueError("No valid save path was provided.")
 
         try:
-            with open(file_path, "wb") as file:  # type: ignore
-                pickle.dump(self.data, file)
+            if file_format == "pickle":
+                self.data.to_pickle(file_path)  # type: ignore
+
+            elif file_format == "csv":
+                self.data.to_csv(file_path, index=False)
+
+            elif file_format == "json":
+                self.data.to_json(file_path, orient="records")
+
+            elif file_format == "parquet":
+                self.data.to_parquet(file_path, index=False, compression="gzip")
+
             logger.info(f"Data saved to: {file_path}")
 
         except FileNotFoundError:

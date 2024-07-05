@@ -1,6 +1,6 @@
 # Overview
 
-This project seeks to compare perform a meta-study of multiple different machine learning models across publicly available datasets on Kaggle. The results and details of the data sources are described through visualizations with Plotly Dash.
+This project seeks to compare perform a meta-study of multiple different regression models across publicly available datasets on Kaggle. The results and details of the data sources are described through visualizations with Plotly Dash.
 
 The models compared are:
 

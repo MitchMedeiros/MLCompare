@@ -3,4 +3,4 @@
 __pycache__/
 main.log
 testing.ipynb
-src/models/*
+src/models/saved_models/*
