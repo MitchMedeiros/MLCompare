@@ -103,6 +103,33 @@ class DataProcessor:
         self.data = df
         return df
 
+    def has_missing_values(self, raise_exception: bool = True) -> bool:
+        """
+        Checks for missing values: NaN, "", and "." in the DataFrame and logs them.
+        If `raise_exception` = True a ValueError will be raised if any are found.
+
+        Returns:
+            False - if no values are missing.
+        """
+        df = self.data
+
+        # Convert from numpy bool_ type to be safe
+        has_nan = bool(df.isnull().values.any())
+        has_empty_strings = bool((df == "").values.any())
+        has_dot_values = bool((df == ".").values.any())
+
+        missing_values = has_nan or has_empty_strings or has_dot_values
+
+        if missing_values:
+            logger.warning(
+                f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}. \
+                \n DataFrame: \n {self.data.head(3)}"
+            )
+            if raise_exception:
+                raise ValueError("Missing values found in the DataFrame.")
+
+        return missing_values
+
     def drop_columns(self, columns_to_drop: list[str] | None) -> pd.DataFrame:
         """
         Drops the specified columns from the DataFrame.

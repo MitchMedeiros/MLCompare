@@ -1,6 +1,6 @@
+import logging
 import sys
 import unittest
-import unittest.mock
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +9,13 @@ from kaggle.rest import ApiException
 data_dir = Path(__file__).resolve().parents[1].as_posix()
 sys.path.append(data_dir)
 from data.data_processor import DataProcessor  # noqa: E402
+
+src_dir = Path(__file__).resolve().parents[2].as_posix()
+sys.path.append(src_dir)
+import utils  # noqa: E402
+
+utils.setup_logging()
+logger = logging.getLogger("data.data_processor")
 
 
 class TestDataProcessor(unittest.TestCase):
@@ -204,6 +211,59 @@ class TestDataProcessor(unittest.TestCase):
         self.assertTrue("Cuisine" not in df.columns)
 
         save_path.unlink()
+
+    # Returns False when no missing values are present
+    def test_missing_values_no_missing_values(self):
+        data = {"A": [1, 2, 3], "B": ["value", "value", "value"]}
+        processor = DataProcessor(data=data)
+        result = processor.has_missing_values()
+        self.assertFalse(result)
+
+    # DataFrame is empty and should return False
+    def test_missing_values_empty_dataframe(self):
+        data = pd.DataFrame()
+        processor = DataProcessor(data=data)
+        result = processor.has_missing_values()
+        self.assertFalse(result)
+
+    # Detects NaN values in DataFrame and returns True
+    def test_missing_values_none_value(self):
+        data = {"A": [1, 2, None], "B": ["value", "value", "value"]}
+        processor = DataProcessor(data=data)
+        with self.assertRaises(ValueError):
+            result = processor.has_missing_values()
+            self.assertTrue(result)
+
+    # Detects empty strings in DataFrame and returns True
+    def test_missing_values_empty_strings(self):
+        data = {"A": [1, 2, 3], "B": ["", "value", "value"]}
+        processor = DataProcessor(data=data)
+        with self.assertRaises(ValueError):
+            result = processor.has_missing_values()
+            self.assertTrue(result)
+
+    # Detects "." values in DataFrame and returns True
+    def test_missing_values_dot_values(self):
+        data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
+        processor = DataProcessor(data=data)
+        with self.assertRaises(ValueError):
+            result = processor.has_missing_values()
+            self.assertTrue(result)
+
+    # DataFrame contains mixed data types
+    def test_multiple_missing_value_types(self):
+        data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
+        processor = DataProcessor(data=data)
+        with self.assertRaises(ValueError):
+            result = processor.has_missing_values()
+            self.assertTrue(result)
+
+    # Logs a warning message when missing values are found
+    def test_logs_warning_message(self):
+        data = {"A": [1, 2, None], "B": ["", "value", "."]}
+        processor = DataProcessor(data=data)
+        with self.assertLogs(logger, level="WARNING"):
+            processor.has_missing_values(raise_exception=False)
 
 
 if __name__ == "__main__":

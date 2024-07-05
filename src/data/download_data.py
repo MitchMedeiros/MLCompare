@@ -44,12 +44,15 @@ def download_and_process_data(
             dataset.dataset_name,
             dataset.file_name,
         )
+
+        raw_data_file_name = f"{dataset.dataset_name}.{file_format}"
+        processed_data_file_name = f"{dataset.dataset_name}_cleaned.{file_format}"
+
+        processor.save_data(save_directory / raw_data_file_name, file_format)
+        processor.has_missing_values()
         processor.drop_columns(dataset.columns_to_drop)
         processor.encode_columns(dataset.columns_to_encode)
-        processor.save_data(
-            save_directory / f"{dataset.dataset_name}_cleaned.{file_format}",
-            file_format,
-        )
+        processor.save_data(save_directory / processed_data_file_name, file_format)
 
 
 if __name__ == "__main__":
