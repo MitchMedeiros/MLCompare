@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 class DataProcessor:
     """
-    A class to download, load, process and save data mostly via Pandas.
+    A class to download, load, process, and save data via Pandas.
 
     ### Initialization Parameters
-    data: Accepts either a DataFrame, a Path to a file containing data, or a datatype excepted by pd.DataFrame.
+    data: Accepts either a DataFrame, a Path object to a file containing data, or any valid input for a Pandas DataFrame.
     Can be omitted in favor of using the `download_kaggle_data` method or the dedicated `load_data` method.
 
     default_save_path: the default path to save the data to if none is specified in `save_data`.
@@ -36,6 +36,9 @@ class DataProcessor:
                 if extension == ".csv":
                     df = pd.read_csv(data)
 
+                elif extension == ".parquet":
+                    df = pd.read_parquet(data)
+
                 elif extension == ".pkl":
                     df = pd.read_pickle(data)
 
@@ -43,7 +46,9 @@ class DataProcessor:
                     df = pd.read_json(data)
 
                 else:
-                    raise ValueError("Data file must be a CSV, PKL, or JSON file.")
+                    raise ValueError(
+                        "Data file must be a Parquet, CSV, PKL, or JSON file."
+                    )
 
             except FileNotFoundError:
                 logger.exception(f"File not found: {data}")

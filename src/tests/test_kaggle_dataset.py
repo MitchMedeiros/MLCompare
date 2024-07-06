@@ -4,7 +4,11 @@ from pathlib import Path
 
 data_dir = Path(__file__).resolve().parents[1].as_posix()
 sys.path.append(data_dir)
-from data.kaggle_dataset import KaggleDataset  # noqa: E402
+from data.dataset_validation import (  # noqa: E402
+    KaggleDataset,
+    LocalDataset,
+    validate_dataset_params,
+)
 
 
 class TestDataProcessor(unittest.TestCase):

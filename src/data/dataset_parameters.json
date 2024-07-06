@@ -1,0 +1,10 @@
+{
+    "restaurant_revenue": {
+        "username": "anthonytherrien",
+        "dataset_name": "restaurant-revenue-prediction-dataset",
+        "file_name": "restaurant_data.csv",
+        "target_column": "Revenue",
+        "columns_to_drop": ["Name"],
+        "columns_to_encode": ["Location", "Cuisine", "Parking Availability"]
+    }
+}

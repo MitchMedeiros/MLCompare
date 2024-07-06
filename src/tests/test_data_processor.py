@@ -6,25 +6,22 @@ from pathlib import Path
 import pandas as pd
 from kaggle.rest import ApiException
 
-data_dir = Path(__file__).resolve().parents[1].as_posix()
-sys.path.append(data_dir)
-from data.data_processor import DataProcessor  # noqa: E402
-
-src_dir = Path(__file__).resolve().parents[2].as_posix()
-sys.path.append(src_dir)
+root_dir = Path(__file__).resolve().parents[2].as_posix()
+sys.path.append(root_dir)
 import utils  # noqa: E402
+from src.data.data_processor import DataProcessor  # noqa: E402
 
 utils.setup_logging()
-logger = logging.getLogger("data.data_processor")
+logger = logging.getLogger("src.data.data_processor")
 
 
 class TestDataProcessor(unittest.TestCase):
     current_dir = Path(__file__).parent.resolve()
-    two_row_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
+    two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
 
     def test_init_with_dataframe(self):
         # Create a DataFrame for testing
-        data = pd.DataFrame(self.two_row_data)
+        data = pd.DataFrame(self.two_column_data)
 
         # Initialize DataProcessor with the DataFrame
         processor = DataProcessor(data=data)
@@ -35,7 +32,7 @@ class TestDataProcessor(unittest.TestCase):
     def test_init_with_path_csv(self):
         # Create a temporary CSV file for testing
         csv_path = self.current_dir / "test.csv"
-        data = pd.DataFrame(self.two_row_data)
+        data = pd.DataFrame(self.two_column_data)
         data.to_csv(csv_path, index=False)
 
         # Initialize DataProcessor with the CSV file path
@@ -47,10 +44,25 @@ class TestDataProcessor(unittest.TestCase):
         # Clean up the temporary CSV file
         csv_path.unlink()
 
+    def test_init_with_path_parquet(self):
+        # Create a temporary pickle file for testing
+        parquet_path = self.current_dir / "test.parquet"
+        data = pd.DataFrame(self.two_column_data)
+        data.to_parquet(parquet_path)
+
+        # Initialize DataProcessor with the pickle file path
+        processor = DataProcessor(data=parquet_path)
+
+        # Check if the data attribute is set correctly
+        self.assertTrue(processor.data.equals(data))
+
+        # Clean up the temporary pickle file
+        parquet_path.unlink()
+
     def test_init_with_path_pkl(self):
         # Create a temporary pickle file for testing
         pkl_path = self.current_dir / "test.pkl"
-        data = pd.DataFrame(self.two_row_data)
+        data = pd.DataFrame(self.two_column_data)
         data.to_pickle(pkl_path)
 
         # Initialize DataProcessor with the pickle file path
@@ -65,7 +77,7 @@ class TestDataProcessor(unittest.TestCase):
     def test_init_with_path_json(self):
         # Create a temporary JSON file for testing
         json_path = self.current_dir / "test.json"
-        data = pd.DataFrame(self.two_row_data)
+        data = pd.DataFrame(self.two_column_data)
         data.to_json(json_path, orient="records")
 
         # Initialize DataProcessor with the JSON file path
@@ -80,7 +92,7 @@ class TestDataProcessor(unittest.TestCase):
     def test_init_with_unsupported_file_type(self):
         # Create a temporary JSON file for testing
         html_path = self.current_dir / "test.html"
-        data = pd.DataFrame(self.two_row_data)
+        data = pd.DataFrame(self.two_column_data)
         data.to_html(html_path)
 
         with self.assertRaises(Exception):
