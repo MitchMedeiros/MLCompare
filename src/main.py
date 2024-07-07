@@ -1,8 +1,10 @@
+import json
 import logging
 import sys
 from pathlib import Path
 
 import config
+from models.model_validation import SklearnModel, XGBoostModel, validate_model_params
 
 from data.data_processor import DataProcessor
 from data.dataset_validation import KaggleDataset, LocalDataset, validate_dataset_params
@@ -62,7 +64,26 @@ def process_datasets(
         processor.save_data(save_directory / processed_data_file_name, file_format)
 
 
-def main():
+def process_models(
+    models: list[SklearnModel | XGBoostModel], data, split_data, results_path: Path
+):
+    """
+    Processes a list of models by training and evaluating them.
+
+    Args:
+        models (list[SklearnModel | XGBoostModel]): A list of models to process.
+    """
+    model_results_dict = {}
+    for model in models:
+        model.train()
+        prediction = model.predict()
+        results = model.evaluate(prediction)
+        model_results_dict[model.__class__.__name__] = results
+
+    results_path.write_text(json.dumps(model_results_dict, indent=4))
+
+
+def main(model_params):
     utils.setup_logging()
 
     data_dir = Path(__file__).parent.resolve() / "data"
@@ -73,6 +94,11 @@ def main():
     datasets = validate_dataset_params(dataset_params_path)
     process_datasets(datasets, dataset_save_dir, dataset_save_format)
 
+    models = validate_model_params(model_params)
+    process_models(models)
+
 
 if __name__ == "__main__":
-    main()
+    model_params = {}
+
+    main(model_params)

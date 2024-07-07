@@ -2,4 +2,6 @@ kaggle
 pandas
 scikit-learn
 xgboost
+torch
 plotly
+pydantic
