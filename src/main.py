@@ -4,7 +4,9 @@ import sys
 from pathlib import Path
 
 import config
+import pandas as pd
 from models.model_validation import SklearnModel, XGBoostModel, validate_model_params
+from sklearn.model_selection import train_test_split
 
 from data.data_processor import DataProcessor
 from data.dataset_validation import KaggleDataset, LocalDataset, validate_dataset_params
@@ -62,43 +64,76 @@ def process_datasets(
         processor.drop_columns(dataset.columns_to_drop)
         processor.encode_columns(dataset.columns_to_encode)
         processor.save_data(save_directory / processed_data_file_name, file_format)
+        X_train, X_test, y_train, y_test = processor.split_data()
 
 
-def process_models(
-    models: list[SklearnModel | XGBoostModel], data, split_data, results_path: Path
-):
+def train_predict_and_save(
+    models: list[SklearnModel | XGBoostModel],
+    save_results_path: Path,
+    nonsplit_data=Path,
+    split_data=None,
+    test_size: float = 0.2,
+) -> None:
     """
-    Processes a list of models by training and evaluating them.
+    Train and perform predictions using a list of models and save their performance metrics to a file.
+    Data can be provided as a single dataset or as a train-test split. If a single dataset is provided,
+    the data will be split into training and testing sets. If both nonsplit_data and
+    split_data are provided, split_data will be used.
 
     Args:
         models (list[SklearnModel | XGBoostModel]): A list of models to process.
     """
+    assert nonsplit_data is not None or split_data is not None, (
+        "Either nonsplit_data or split_data must be provided. "
+        "If both are provided, split_data will be used."
+    )
+
+    if split_data is None:
+        df = pd.read_parquet(nonsplit_data)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            df, test_size=0.2, random_state=0
+        )
+
     model_results_dict = {}
+
     for model in models:
-        model.train()
-        prediction = model.predict()
-        results = model.evaluate(prediction)
+        model.train(X_train, y_train)
+        prediction = model.predict(X_test)
+        results = model.evaluate(y_test, prediction)
         model_results_dict[model.__class__.__name__] = results
 
-    results_path.write_text(json.dumps(model_results_dict, indent=4))
+    save_results_path.write_text(json.dumps(model_results_dict, indent=4))
 
 
-def main(model_params):
+def main():
     utils.setup_logging()
 
-    data_dir = Path(__file__).parent.resolve() / "data"
+    data_dir = Path(__file__).resolve().parent / "data"
     dataset_save_dir = data_dir / "saved_data"
-    dataset_params_path = data_dir / "dataset_parameters.json"
-    dataset_save_format = config.DATASET_SAVE_FORMAT
+    # dataset_params_path = data_dir / "dataset_parameters.json"
+    # dataset_save_format = config.DATASET_SAVE_FORMAT
 
-    datasets = validate_dataset_params(dataset_params_path)
-    process_datasets(datasets, dataset_save_dir, dataset_save_format)
+    # datasets = validate_dataset_params(dataset_params_path)
+    # process_datasets(datasets, dataset_save_dir, dataset_save_format)
 
-    models = validate_model_params(model_params)
-    process_models(models)
+    ########################
+
+    model_dir = Path(__file__).resolve().parent / "models"
+    model_params_path = model_dir / "model_parameters.json"
+
+    # Convert the parameters into a list of model objects
+    models = validate_model_params(model_params_path)
+    print(type(models[2]))
+
+    # Train and evaluate the models
+    train_predict_and_save(
+        models,
+        model_dir / "model_results.json",
+        nonsplit_data=dataset_save_dir
+        / "restaurant-revenue-prediction-dataset_cleaned.parquet",
+    )
 
 
 if __name__ == "__main__":
-    model_params = {}
-
-    main(model_params)
+    main()

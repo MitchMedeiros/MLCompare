@@ -1,5 +1,7 @@
+import json
 import logging
 from importlib import import_module
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, PrivateAttr, ValidationError
@@ -19,7 +21,7 @@ class LibraryModel(BaseModel):
     ]
     module: str
     name: str
-    params: dict[str, Any] | None = None
+    params: dict | None = None
     _initialized_model: Any = PrivateAttr(None)
 
     def __init__(self, **data: Any):
@@ -27,8 +29,8 @@ class LibraryModel(BaseModel):
             super().__init__(**data)
         except ValidationError as e:
             logger.error(
-                "Could not validate model configuration. Please check the supplied dictionary contains \
-            'library', 'module', and 'name' fields for each model."
+                "Could not validate model configuration. Please check that the supplied dictionary contains "
+                "'library', 'module', and 'name' fields for each model."
             )
             raise e
 
@@ -57,7 +59,7 @@ class LibraryModel(BaseModel):
 
         self._initialized_model = initialized_model
 
-    def evaluate(y_test, y_pred):
+    def evaluate(y_test, y_pred) -> dict[str, float]:
         r2 = r2_score(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
         return {"r2_score": r2, "rmse": rmse}
@@ -96,25 +98,41 @@ class XGBoostModel(LibraryModel):
 
 
 def validate_model_params(
-    model_config: list,
+    model_config: Path | list,
 ) -> list[SklearnModel | XGBoostModel | CustomModel]:
+    if isinstance(model_config, Path):
+        try:
+            with open(model_config) as file:
+                model_config = json.load(file)
+
+        except FileNotFoundError as e:
+            logger.error(f"Could not find file: {model_config}")
+            raise e
+
+    assert isinstance(
+        model_config, list
+    ), "model_config must be a list of dictionaries or a path to .json file containing one."
+
+    assert all(
+        isinstance(model, dict) for model in model_config
+    ), "Each list element in `model_config` must be a dictionary."
+
     initialized_models: list[SklearnModel | XGBoostModel | CustomModel] = []
 
-    for model_values in model_config:
-        if model_values["library"] in ["sklearn", "scikit-learn"]:
-            skl_model = SklearnModel(**model_values)
-            initialized_models.append(skl_model)
+    for model in model_config:
+        if model["library"] in ["sklearn", "scikit-learn"]:
+            initialized_models.append(SklearnModel(**model))
 
-        elif model_values["library"] in ["xgboost", "xgb"]:
-            xgb_model = XGBoostModel(**model_values)
-            initialized_models.append(xgb_model)
+        elif model["library"] in ["xgboost", "xgb"]:
+            initialized_models.append(XGBoostModel(**model))
 
         else:
             raise ValueError(
-                f"Library {model_values['library']} is not implemented. Valid library names \
-            are: 'sklearn', 'xgboost', 'pytorch', or 'tensorflow'. If your model is not \
-            in one of these libraries use custom and provide a custom_function that takes in \
-            train-test split data and returns a prediction nd.array or pd.Series."
+                f"Library {model['library']} is not supported. Valid library names "
+                "are: 'sklearn', 'xgboost', 'pytorch', or 'tensorflow'. If your model is not "
+                "in one of these libraries use 'custom' and provide a value for 'custom_function' "
+                "that takes in train-test split data and returns an nd.array or pd.Series of "
+                "predictions. See the documentation for more details."
             )
 
     return initialized_models

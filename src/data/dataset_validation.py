@@ -51,7 +51,7 @@ class LocalDataset(BaseModel):
 
 
 def validate_dataset_params(
-    dataset_params: dict[str, dict[str, Any]] | Path
+    dataset_params: list[dict[str, Any]] | Path
 ) -> list[KaggleDataset | LocalDataset]:
     """
     Creates a list of KaggleDataset and LocalDataset objects from a dictionary of parameters. You can
@@ -115,25 +115,33 @@ def validate_dataset_params(
         try:
             with open(dataset_params, "r") as file:
                 dataset_params = json.load(file)
-        except FileNotFoundError:
+
+        except FileNotFoundError as e:
             logger.exception(
-                f"File not when attempting load dataset_params from .json file using path: {dataset_params}"
+                f"Could not find file: {dataset_params}"
             )
-            raise
+            raise e
 
-    if isinstance(dataset_params, dict):
-        datasets = [
-            KaggleDataset(**params)
-            if params.get("dataset_type") == "kaggle"
-            else LocalDataset(**params)
-            if params.get("dataset_type") == "local"
-            else None
-            for params in dataset_params.values()
-        ]
+    assert isinstance(
+        dataset_params, list
+    ), "dataset_params must be a list of dictionaries or a path to .json file containing one."
 
-    if None in datasets:
+    assert all(
+        isinstance(params, dict) for params in dataset_params
+    ), "Each list element in `dataset_params` must be a dictionary."
+
+    dataset_validators = [
+        KaggleDataset(**params)
+        if params.get("dataset_type") == "kaggle"
+        else LocalDataset(**params)
+        if params.get("dataset_type") == "local"
+        else None
+        for params in dataset_params
+    ]
+
+    if None in dataset_validators:
         raise ValueError(
-            "Invalid dataset_type for one or more entries. Must be 'kaggle' or 'local'."
+            "Invalid value for dataset_type for one or more entries. Must be 'kaggle' or 'local'."
         )
 
-    return datasets  # type: ignore
+    return dataset_validators  # type: ignore

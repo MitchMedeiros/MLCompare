@@ -1,10 +1,13 @@
 import logging
+import pickle
 from io import StringIO
 from pathlib import Path
 from typing import Any
 
 import kaggle
+import numpy as np
 import pandas as pd
+from pydantic import BaseModel, PrivateAttr
 
 # from pydantic import BaseModel
 from sklearn.model_selection import train_test_split
@@ -50,8 +53,9 @@ class DataProcessor:
                         "Data file must be a Parquet, CSV, PKL, or JSON file."
                     )
 
-            except FileNotFoundError:
+            except FileNotFoundError as e:
                 logger.exception(f"File not found: {data}")
+                raise e
 
         elif isinstance(data, pd.DataFrame):
             df = data
@@ -64,9 +68,9 @@ class DataProcessor:
                 df = pd.DataFrame(data)
             except Exception as e:
                 logger.exception(
-                    f"Could not convert data with type: {type(data)} to DataFrame: {e}"
+                    f"Could not convert data with type: {type(data)} to DataFrame"
                 )
-                raise
+                raise e
 
         self.data = df
         self.default_save_path = default_save_path
@@ -98,12 +102,12 @@ class DataProcessor:
             logger.info("Data successfully downloaded")
 
         except Exception as e:
-            logger.exception(f"Exception when calling Kaggle Api: {e}\n")
-            raise
+            logger.exception("Exception when calling Kaggle Api")
+            raise e
 
         data = StringIO(data)
         df = pd.read_csv(data)
-        logger.info(f"String data converted to DataFrame: \n {df.head(3)}")
+        logger.info(f"String data converted to DataFrame: \n{df.head(3)}")
 
         self.data = df
         return df
@@ -127,11 +131,11 @@ class DataProcessor:
 
         if missing_values:
             logger.warning(
-                f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}. \
-                \n DataFrame: \n {self.data.head(3)}"
+                f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
+                f"\nDataFrame: \n{self.data.head(3)}"
             )
             if raise_exception:
-                raise ValueError("Missing values found in the DataFrame.")
+                raise ValueError()
 
         return missing_values
 
@@ -147,7 +151,7 @@ class DataProcessor:
         """
         if columns_to_drop is not None:
             self.data = self.data.drop(columns_to_drop, axis=1)
-            logger.info(f"Columns dropped: \n {self.data.head(3)}")
+            logger.info(f"Columns dropped: \n{self.data.head(3)}")
 
         return self.data
 
@@ -174,7 +178,7 @@ class DataProcessor:
 
             # Drop the original columns and join the one-hot encoded columns
             df = df.drop(columns=columns_to_encode).join(encoded_df)
-            logger.info(f"Data successfully encoded: \n {df.head(3)}")
+            logger.info(f"Data successfully encoded: \n{df.head(3)}")
 
             self.data = df
 
@@ -244,3 +248,70 @@ class DataProcessor:
 
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")
+
+
+class DatasetSplitter(BaseModel):
+    data: pd.DataFrame
+    target_column: str
+    test_size: float = 0.2
+    _X_train: np.ndarray = PrivateAttr(None)
+    _X_test: np.ndarray = PrivateAttr(None)
+    _y_train: np.ndarray = PrivateAttr(None)
+    _y_test: np.ndarray = PrivateAttr(None)
+
+    def __init__(self):
+        super().__init__()
+        self.split_data()
+
+    def split_data(self) -> None:
+        """Split the data into its features and target.
+
+        Args:
+            data (pd.DataFrame): The data to be split.
+
+        Returns:
+            tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple containing the training
+            and testing data for features and target variables.
+                X_train: Training data for features (pd.DataFrame)
+                X_test: Testing data for features (pd.DataFrame)
+                y_train: Training data for target variable(s) (pd.Series)
+                y_test: Testing data for target variable(s) (pd.Series)
+        """
+        df = self.data
+        X = df.drop([self.target_column], axis=1)
+        y = df[self.target_column]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=self.test_size, random_state=0
+        )
+
+        self._X_train = X_train
+        self._X_test = X_test
+        self._y_train = y_train
+        self._y_test = y_test
+
+    def save_split_data(self):
+        split_data = SplitData(
+            X_train=self._X_train,
+            X_test=self._X_test,
+            y_train=self._y_train,
+            y_test=self._y_test,
+        )
+        with open(self.save_directory / "split_data.pkl", "wb") as file:
+            pickle.dump(split_data, file)
+
+
+class SplitData(BaseModel):
+    X_train: np.ndarray
+    X_test: np.ndarray
+    y_train: np.ndarray
+    y_test: np.ndarray
+    save_directory: Path
+
+    def load_split_data(self):
+        with open(self.save_directory / "split_data.pkl", "rb") as file:
+            data = pickle.load(file)
+            self.X_train = data.X_train
+            self.X_test = data.X_test
+            self.y_train = data.y_train
+            self.y_test = data.y_test

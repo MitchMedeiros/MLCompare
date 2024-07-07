@@ -1,5 +1,6 @@
 [
     {
+        "dataset_type": "kaggle",
         "username": "anthonytherrien",
         "dataset_name": "restaurant-revenue-prediction-dataset",
         "file_name": "restaurant_data.csv",
