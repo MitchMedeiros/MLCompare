@@ -16,6 +16,7 @@ class KaggleDataset(BaseModel):
         username (str): The username of the Kaggle user who owns the dataset.
         dataset_name (str): The name of the Kaggle dataset.
         file_name (str): The name of the file associated with the dataset.
+        save_name (str): The name to use for files saved from this dataset. Should be unique across datasets.
         target_column (str): The name of the target column in the dataset.
         columns_to_drop (list[str] | None): A list of column names to be dropped from the dataset.
     If None, no columns will be dropped.
@@ -37,17 +38,21 @@ class LocalDataset(BaseModel):
 
     ### Attributes:
         file_path (Path): The path to the local dataset file.
+        save_name (str): The name to use for files saved from this dataset. Should be unique across datasets.
         target_column (str): The name of the target column in the dataset.
         columns_to_drop (list[str] | None): A list of column names to be dropped from the dataset.
     If None, no columns will be dropped.
         columns_to_encode (list[str] | None): A list of column names to be encoded in the dataset.
     If None, no columns will be encoded.
+        save_name (str): The name to use for files saved from this dataset. Should be unique across datasets.
+    If None, the file will be saved with the same name as the original file.
     """
 
     file_path: Path
     target_column: str
     columns_to_drop: list[str] | None
     columns_to_encode: list[str] | None
+    save_name: str | None
 
 
 def validate_dataset_params(
@@ -117,9 +122,7 @@ def validate_dataset_params(
                 dataset_params = json.load(file)
 
         except FileNotFoundError as e:
-            logger.exception(
-                f"Could not find file: {dataset_params}"
-            )
+            logger.exception(f"Could not find file: {dataset_params}")
             raise e
 
     assert isinstance(
@@ -131,11 +134,15 @@ def validate_dataset_params(
     ), "Each list element in `dataset_params` must be a dictionary."
 
     dataset_validators = [
-        KaggleDataset(**params)
-        if params.get("dataset_type") == "kaggle"
-        else LocalDataset(**params)
-        if params.get("dataset_type") == "local"
-        else None
+        (
+            KaggleDataset(**params)
+            if params.get("dataset_type") == "kaggle"
+            else (
+                LocalDataset(**params)
+                if params.get("dataset_type") == "local"
+                else None
+            )
+        )
         for params in dataset_params
     ]
 

@@ -2,7 +2,7 @@ import logging
 import pickle
 from io import StringIO
 from pathlib import Path
-from typing import Any
+from typing import Literal
 
 import kaggle
 import pandas as pd
@@ -10,44 +10,48 @@ from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
+from .dataset_validation import KaggleDataset, LocalDataset
+
 logger = logging.getLogger(__name__)
 
 
-class DataProcessor:
-    """
-    A class to download, load, process, and save data via Pandas.
-
-    ### Initialization Parameters
-    data: Accepts either a DataFrame, a Path object to a file containing data, or any valid input for a Pandas DataFrame.
-    Can be omitted in favor of using the `download_kaggle_data` method or the dedicated `load_data` method.
-    """
-
+class DatasetProcessor:
     def __init__(
         self,
-        data: Any | pd.DataFrame | Path | None = None,
+        dataset: KaggleDataset | LocalDataset,
+        data_directory: Path,
     ) -> None:
-        if isinstance(data, Path):
-            self.data = self.read_from_path(file_path=data)
+        if isinstance(data_directory, Path):
+            self.data_directory = data_directory
+        else:
+            raise ValueError("Data directory must be a Path object.")
 
-        elif isinstance(data, pd.DataFrame):
-            self.data = data
+        if isinstance(dataset, LocalDataset):
+            file_path = dataset.file_path
+            self.data = self._read_from_path(file_path)
 
-        elif data is None:
-            self.data = pd.DataFrame()
+            if dataset.save_name is not None:
+                self.save_name = dataset.save_name
+            else:
+                self.save_name = file_path.stem
+
+        elif isinstance(dataset, KaggleDataset):
+            self.data = self._download_kaggle_data(
+                dataset.username,
+                dataset.dataset_name,
+                dataset.file_name,
+            )
+
+            self.save_name = f"{dataset.username}_{dataset.dataset_name}"
 
         else:
-            try:
-                self.data = pd.DataFrame(data)
+            raise ValueError("Data must be a KaggleDataset or LocalDataset object.")
 
-            except Exception as e:
-                logger.exception(
-                    f"Could not convert data with type: {type(data)} to DataFrame"
-                )
-                raise e
+        self.target_column = dataset.target_column
+        self.columns_to_drop = dataset.columns_to_drop
+        self.columns_to_encode = dataset.columns_to_encode
 
-        assert isinstance(self.data, pd.DataFrame), "Data must be a Pandas DataFrame."
-
-    def read_from_path(self, file_path: Path) -> pd.DataFrame:
+    def _read_from_path(self, file_path: Path) -> pd.DataFrame:
         try:
             extension = file_path.suffix
 
@@ -72,7 +76,7 @@ class DataProcessor:
             logger.exception(f"File not found: {file_path}")
             raise e
 
-    def download_kaggle_data(
+    def _download_kaggle_data(
         self,
         dataset_owner: str,
         dataset_name: str,
@@ -80,7 +84,7 @@ class DataProcessor:
     ) -> pd.DataFrame:
         """
         Downloads a Kaggle dataset. Overwrites any existing data for the class instance.
-        Currently only supports CSV files.
+        Currently only tested on CSV files.
 
         Args:
             dataset_owner (str): The user(s) under which the dataset is provided.
@@ -106,7 +110,6 @@ class DataProcessor:
         df = pd.read_csv(data)
         logger.info(f"String data converted to DataFrame: \n{df.head(3)}")
 
-        self.data = df
         return df
 
     def has_missing_values(self, raise_exception: bool = True) -> bool:
@@ -136,7 +139,7 @@ class DataProcessor:
 
         return missing_values
 
-    def drop_columns(self, columns_to_drop: list[str] | None) -> pd.DataFrame:
+    def drop_columns(self) -> pd.DataFrame:
         """
         Drops the specified columns from the DataFrame.
 
@@ -146,13 +149,15 @@ class DataProcessor:
         Returns:
             pd.DataFrame: The DataFrame with the specified columns dropped.
         """
-        if columns_to_drop is not None:
-            self.data = self.data.drop(columns_to_drop, axis=1)
+        if self.columns_to_drop is not None:
+            df = self.data.drop(self.columns_to_drop, axis=1)
             logger.info(f"Columns dropped: \n{self.data.head(3)}")
+
+            self.data = df
 
         return self.data
 
-    def encode_columns(self, columns_to_encode: list[str] | None) -> pd.DataFrame:
+    def encode_columns(self) -> pd.DataFrame:
         """
         Encodes the specified columns using one-hot encoding and returns the encoded DataFrame.
 
@@ -162,26 +167,29 @@ class DataProcessor:
         Returns:
             pd.DataFrame: The DataFrame with the specified columns encoded using one-hot encoding.
         """
-        if columns_to_encode is not None:
+        if self.columns_to_encode is not None:
             df = self.data
             encoder = OneHotEncoder(sparse_output=False)
-            encoded_array = encoder.fit_transform(df[columns_to_encode])
+            encoded_array = encoder.fit_transform(df[self.columns_to_encode])
 
             # Convert the one-hot encoded ndarray to a DataFrame
             encoded_df = pd.DataFrame(
                 encoded_array,
-                columns=encoder.get_feature_names_out(columns_to_encode),
+                columns=encoder.get_feature_names_out(self.columns_to_encode),
             )
 
             # Drop the original columns and join the one-hot encoded columns
-            df = df.drop(columns=columns_to_encode).join(encoded_df)
+            df = df.drop(columns=self.columns_to_encode).join(encoded_df)
             logger.info(f"Data successfully encoded: \n{df.head(3)}")
 
             self.data = df
 
         return self.data
 
-    def save_dataframe(self, file_path: Path, file_format: str = "pickle") -> None:
+    def save_dataframe(
+        self,
+        file_format: Literal["pickle", "csv", "json", "parquet"] = "pickle",
+    ) -> None:
         """
         Save the data to a file.
 
@@ -193,15 +201,19 @@ class DataProcessor:
         """
         try:
             if file_format == "pickle":
-                self.data.to_pickle(file_path)  # type: ignore
+                file_path = self.data_directory / f"{self.save_name}.pkl"
+                self.data.to_pickle(file_path)
 
             elif file_format == "csv":
+                file_path = self.data_directory / f"{self.save_name}.csv"
                 self.data.to_csv(file_path, index=False)
 
             elif file_format == "json":
+                file_path = self.data_directory / f"{self.save_name}.json"
                 self.data.to_json(file_path, orient="records")
 
             elif file_format == "parquet":
+                file_path = self.data_directory / f"{self.save_name}.parquet"
                 self.data.to_parquet(file_path, index=False, compression="gzip")
 
             logger.info(f"Data saved to: {file_path}")
@@ -211,7 +223,6 @@ class DataProcessor:
 
     def split_data(
         self,
-        target_column: str,
         test_size: float = 0.2,
     ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Split the data into its features and target.
@@ -228,23 +239,25 @@ class DataProcessor:
                 y_train: Training data for target variable(s) (pd.DataFrame | pd.Series)
                 y_test: Testing data for target variable(s) (pd.DataFrame | pd.Series)
         """
-        df = self.data
-        X = df.drop([target_column], axis=1)
-        y = df[target_column]
+        if self.target_column is not None:
+            df = self.data
+            X = df.drop([self.target_column], axis=1)
+            y = df[self.target_column]
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=0
-        )
-        logger.info(
-            f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
-        )
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=test_size, random_state=0
+            )
+            logger.info(
+                f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
+            )
 
-        return X_train, X_test, y_train, y_test
+            return X_train, X_test, y_train, y_test
+
+        else:
+            raise ValueError("No target column provided within the dataset parameters.")
 
     def split_and_save_data(
         self,
-        save_path: Path,
-        target_column: str,
         test_size: float = 0.2,
     ) -> None:
         """
@@ -255,19 +268,18 @@ class DataProcessor:
             target_column (str): The column(s) to be used as the target variable(s) or label(s).
             test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
         """
-        X_train, X_test, y_train, y_test = self.split_data(
-            target_column=target_column, test_size=test_size
-        )
+        X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
 
-        split_data = SplitData(
+        split_data_obj = SplitData(
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
             y_test=y_test,
         )
 
+        save_path = self.data_directory / f"{self.save_name}_split.pkl"
         with open(save_path, "wb") as file:
-            pickle.dump(split_data, file)
+            pickle.dump(split_data_obj, file)
 
 
 class SplitData(BaseModel):
@@ -281,25 +293,6 @@ class SplitData(BaseModel):
     y_test: pd.DataFrame | pd.Series
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
-def split_and_save_data(
-    data: pd.DataFrame, target_column: str, save_path: Path, test_size: float = 0.2
-) -> None:
-    """
-    A convenience function for DataProcessor.split_and_save_data().
-    Splits the data and save it to a single pickle file as a SplitData object.
-
-    Args:
-        data (pd.DataFrame): The data to be split.
-        target_column (str): The column(s) to be used as the target variable(s) or label(s).
-        save_path (Path): The path to save the SplitData object to.
-        test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
-    """
-    processor = DataProcessor(data)
-    processor.split_and_save_data(
-        save_path=save_path, target_column=target_column, test_size=test_size
-    )
 
 
 def load_split_data(
