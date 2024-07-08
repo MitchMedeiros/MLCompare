@@ -5,3 +5,5 @@ xgboost
 torch
 plotly
 pydantic
+pyarrow
+ruff

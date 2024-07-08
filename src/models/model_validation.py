@@ -4,7 +4,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, PrivateAttr, ValidationError
+from pydantic import BaseModel, PrivateAttr
 from sklearn.metrics import mean_squared_error, r2_score
 
 logger = logging.getLogger(__name__)
@@ -24,19 +24,7 @@ class LibraryModel(BaseModel):
     params: dict | None = None
     _initialized_model: Any = PrivateAttr(None)
 
-    def __init__(self, **data: Any):
-        try:
-            super().__init__(**data)
-        except ValidationError as e:
-            logger.error(
-                "Could not validate model configuration. Please check that the supplied dictionary contains "
-                "'library', 'module', and 'name' fields for each model."
-            )
-            raise e
-
-        self._init_model()
-
-    def _init_model(self):
+    def model_post_init(self, Any) -> None:
         try:
             model_module = import_module(f"{self.module}")
         except ImportError as e:
@@ -66,7 +54,7 @@ class LibraryModel(BaseModel):
 
 
 class SklearnModel(LibraryModel):
-    def train(self, X_train, y_train):
+    def train(self, X_train, y_train) -> None:
         self._initialized_model.fit(X_train, y_train)
 
     def predict(self, X_test):
@@ -74,7 +62,7 @@ class SklearnModel(LibraryModel):
 
 
 class XGBoostModel(LibraryModel):
-    def train(self, X_train, y_train):
+    def train(self, X_train, y_train) -> None:
         self._initialized_model.fit(X_train, y_train)
 
     def predict(self, X_test):

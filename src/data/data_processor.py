@@ -5,13 +5,12 @@ from pathlib import Path
 from typing import Any
 
 import kaggle
-import numpy as np
 import pandas as pd
-from pydantic import BaseModel, PrivateAttr
-
-# from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
+
+from .dataset_validation import KaggleDataset, LocalDataset
 
 logger = logging.getLogger(__name__)
 
@@ -23,57 +22,68 @@ class DataProcessor:
     ### Initialization Parameters
     data: Accepts either a DataFrame, a Path object to a file containing data, or any valid input for a Pandas DataFrame.
     Can be omitted in favor of using the `download_kaggle_data` method or the dedicated `load_data` method.
-
-    default_save_path: the default path to save the data to if none is specified in `save_data`.
     """
 
     def __init__(
         self,
-        data: Any | pd.DataFrame | Path | None = None,
-        default_save_path: Path | None = None,
+        data: Any | KaggleDataset | LocalDataset | pd.DataFrame | Path | None = None,
     ) -> None:
-        if isinstance(data, Path):
-            try:
-                extension = data.suffix
+        if isinstance(data, LocalDataset):
+            file_path = data.file_path
+            self.data = self.read_from_path(file_path)
 
-                if extension == ".csv":
-                    df = pd.read_csv(data)
+        elif isinstance(data, KaggleDataset):
+            self.download_kaggle_data(
+                data.username,
+                data.dataset_name,
+                data.file_name,
+            )
 
-                elif extension == ".parquet":
-                    df = pd.read_parquet(data)
-
-                elif extension == ".pkl":
-                    df = pd.read_pickle(data)
-
-                elif extension == ".json":
-                    df = pd.read_json(data)
-
-                else:
-                    raise ValueError(
-                        "Data file must be a Parquet, CSV, PKL, or JSON file."
-                    )
-
-            except FileNotFoundError as e:
-                logger.exception(f"File not found: {data}")
-                raise e
+        elif isinstance(data, Path):
+            self.data = self.read_from_path(file_path=data)
 
         elif isinstance(data, pd.DataFrame):
-            df = data
+            self.data = data
 
         elif data is None:
-            df = pd.DataFrame()
+            self.data = pd.DataFrame()
 
         else:
             try:
-                df = pd.DataFrame(data)
+                self.data = pd.DataFrame(data)
+
             except Exception as e:
                 logger.exception(
                     f"Could not convert data with type: {type(data)} to DataFrame"
                 )
                 raise e
 
-        self.data = df
-        self.default_save_path = default_save_path
+        assert isinstance(self.data, pd.DataFrame), "Data must be a Pandas DataFrame."
+
+    def read_from_path(self, file_path: Path) -> pd.DataFrame:
+        try:
+            extension = file_path.suffix
+
+            if extension == ".csv":
+                df = pd.read_csv(file_path)
+
+            elif extension == ".parquet":
+                df = pd.read_parquet(file_path)
+
+            elif extension == ".pkl":
+                df = pd.read_pickle(file_path)
+
+            elif extension == ".json":
+                df = pd.read_json(file_path)
+
+            else:
+                raise ValueError("Data file must be a Parquet, CSV, PKL, or JSON file.")
+
+            return df
+
+        except FileNotFoundError as e:
+            logger.exception(f"File not found: {file_path}")
+            raise e
 
     def download_kaggle_data(
         self,
@@ -184,53 +194,16 @@ class DataProcessor:
 
         return self.data
 
-    def split_data(
-        self,
-        target_column: str,
-        test_size: float = 0.2,
-    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-        """Split the data into its features and target.
-
-        Args:
-            target_column (str): The column(s) to be used as the target variable(s).
-
-        Returns:
-            tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple containing the training
-            and testing data for features and target variables.
-                X_train: Training data for features (pd.DataFrame)
-                X_test: Testing data for features (pd.DataFrame)
-                y_train: Training data for target variable(s) (pd.Series)
-                y_test: Testing data for target variable(s) (pd.Series)
-        """
-        df = self.data
-        X = df.drop([target_column], axis=1)
-        y = df[target_column]
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=0
-        )
-        logger.info(
-            f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
-        )
-
-        return X_train, X_test, y_train, y_test
-
-    def save_data(self, file_path: Path | None = None, file_format: str = "pickle"):
+    def save_dataframe(self, file_path: Path, file_format: str = "pickle") -> None:
         """
         Save the data to a file.
 
         Args:
-            file_path (str | Path | None, optional): The path to save the data. If None, the default save path will be used. Defaults to None.
+            file_path (Path): The path to save the data.
 
         Raises:
             ValueError: If no valid save path was provided.
         """
-        if self.default_save_path is not None and file_path is None:
-            file_path = self.default_save_path
-
-        elif self.default_save_path is None and file_path is None:
-            raise ValueError("No valid save path was provided.")
-
         try:
             if file_format == "pickle":
                 self.data.to_pickle(file_path)  # type: ignore
@@ -249,69 +222,126 @@ class DataProcessor:
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")
 
-
-class DatasetSplitter(BaseModel):
-    data: pd.DataFrame
-    target_column: str
-    test_size: float = 0.2
-    _X_train: np.ndarray = PrivateAttr(None)
-    _X_test: np.ndarray = PrivateAttr(None)
-    _y_train: np.ndarray = PrivateAttr(None)
-    _y_test: np.ndarray = PrivateAttr(None)
-
-    def __init__(self):
-        super().__init__()
-        self.split_data()
-
-    def split_data(self) -> None:
+    def split_data(
+        self,
+        target_column: str,
+        test_size: float = 0.2,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         """Split the data into its features and target.
 
         Args:
-            data (pd.DataFrame): The data to be split.
+            target_column (str): The column(s) to be used as the target variable(s).
+            test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
-            tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: A tuple containing the training
+            tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series]: A tuple containing the training
             and testing data for features and target variables.
                 X_train: Training data for features (pd.DataFrame)
                 X_test: Testing data for features (pd.DataFrame)
-                y_train: Training data for target variable(s) (pd.Series)
-                y_test: Testing data for target variable(s) (pd.Series)
+                y_train: Training data for target variable(s) (pd.DataFrame | pd.Series)
+                y_test: Testing data for target variable(s) (pd.DataFrame | pd.Series)
         """
         df = self.data
-        X = df.drop([self.target_column], axis=1)
-        y = df[self.target_column]
+        X = df.drop([target_column], axis=1)
+        y = df[target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=self.test_size, random_state=0
+            X, y, test_size=test_size, random_state=0
+        )
+        logger.info(
+            f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
         )
 
-        self._X_train = X_train
-        self._X_test = X_test
-        self._y_train = y_train
-        self._y_test = y_test
+        return X_train, X_test, y_train, y_test
 
-    def save_split_data(self):
+    def split_and_save_data(
+        self,
+        save_path: Path,
+        target_column: str,
+        test_size: float = 0.2,
+    ) -> None:
+        """
+        Split the data and save it to a single pickle file as a SplitData object.
+
+        Args:
+            save_path (Path): The path to save the SplitData object to.
+            target_column (str): The column(s) to be used as the target variable(s) or label(s).
+            test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+        """
+        X_train, X_test, y_train, y_test = self.split_data(
+            target_column=target_column, test_size=test_size
+        )
+
         split_data = SplitData(
-            X_train=self._X_train,
-            X_test=self._X_test,
-            y_train=self._y_train,
-            y_test=self._y_test,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
         )
-        with open(self.save_directory / "split_data.pkl", "wb") as file:
+
+        with open(save_path, "wb") as file:
             pickle.dump(split_data, file)
 
 
 class SplitData(BaseModel):
-    X_train: np.ndarray
-    X_test: np.ndarray
-    y_train: np.ndarray
-    y_test: np.ndarray
-    save_directory: Path
+    """
+    A class to validate and hold the split data from sklearn.model_selection.train_test_split.
+    """
 
-    def load_split_data(self):
-        with open(self.save_directory / "split_data.pkl", "rb") as file:
-            data = pickle.load(file)
-            self.X_train = data.X_train
-            self.X_test = data.X_test
-            self.y_train = data.y_train
-            self.y_test = data.y_test
+    X_train: pd.DataFrame
+    X_test: pd.DataFrame
+    y_train: pd.DataFrame | pd.Series
+    y_test: pd.DataFrame | pd.Series
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+def split_and_save_data(
+    data: pd.DataFrame, target_column: str, save_path: Path, test_size: float = 0.2
+) -> None:
+    """
+    A convenience function for DataProcessor.split_and_save_data().
+    Splits the data and save it to a single pickle file as a SplitData object.
+
+    Args:
+        data (pd.DataFrame): The data to be split.
+        target_column (str): The column(s) to be used as the target variable(s) or label(s).
+        save_path (Path): The path to save the SplitData object to.
+        test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+    """
+    processor = DataProcessor(data)
+    processor.split_and_save_data(
+        save_path=save_path, target_column=target_column, test_size=test_size
+    )
+
+
+def load_split_data(
+    load_path: Path,
+) -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series
+]:
+    """
+    Load a SplitData object from a pickle file and return the data it was holding.
+
+    Args:
+        load_path (Path): The path to a pickle file of a SplitData object.
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series]: A tuple containing the training
+        and testing data for features and target variables.
+            X_train: Training data for features (pd.DataFrame)
+            X_test: Testing data for features (pd.DataFrame)
+            y_train: Training data for target variable(s) (pd.DataFrame | pd.Series)
+            y_test: Testing data for target variable(s) (pd.DataFrame | pd.Series)
+    """
+    with open(load_path, "rb") as file:
+        split_data = pickle.load(file)
+
+    assert isinstance(split_data, SplitData), "Loaded data must be of type SplitData."
+
+    return (
+        split_data.X_train,
+        split_data.X_test,
+        split_data.y_train,
+        split_data.y_test,
+    )

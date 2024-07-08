@@ -39,9 +39,11 @@ def process_datasets(
         file_format (str): The file format to use when saving the processed data.
     """
     for dataset in datasets:
+        raw_data_file_name = f"{dataset.dataset_name}.{file_format}"
+        processed_data_file_name = f"{dataset.dataset_name}_cleaned.{file_format}"
+
         if isinstance(dataset, LocalDataset):
             processor = DataProcessor(dataset.file_path)
-
         elif isinstance(dataset, KaggleDataset):
             processor = DataProcessor()
 
@@ -50,20 +52,16 @@ def process_datasets(
                 dataset.dataset_name,
                 dataset.file_name,
             )
-
         else:
             raise ValueError(
                 "Dataset must be an instance of KaggleDataset or LocalDataset."
             )
 
-        raw_data_file_name = f"{dataset.dataset_name}.{file_format}"
-        processed_data_file_name = f"{dataset.dataset_name}_cleaned.{file_format}"
-
-        processor.save_data(save_directory / raw_data_file_name, file_format)
+        processor.save_dataframe(save_directory / raw_data_file_name, file_format)
         processor.has_missing_values()
         processor.drop_columns(dataset.columns_to_drop)
         processor.encode_columns(dataset.columns_to_encode)
-        processor.save_data(save_directory / processed_data_file_name, file_format)
+        processor.save_dataframe(save_directory / processed_data_file_name, file_format)
         X_train, X_test, y_train, y_test = processor.split_data()
 
 

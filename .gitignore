@@ -5,3 +5,4 @@ main.log
 testing.ipynb
 src/models/saved_models/*
 data_wrangling.ipynb
+src/data/data.parquet
