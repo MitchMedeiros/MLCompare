@@ -2,7 +2,7 @@ import json
 import logging
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, PrivateAttr
 from sklearn.metrics import mean_squared_error, r2_score
@@ -10,15 +10,20 @@ from sklearn.metrics import mean_squared_error, r2_score
 logger = logging.getLogger(__name__)
 
 
+SklearnLibrary: TypeAlias = Literal["sklearn", "scikit-learn"]
+XGBoostLibrary: TypeAlias = Literal["xgboost", "xgb"]
+PytorchLibrary: TypeAlias = Literal["pytorch", "torch"]
+TensorflowLibrary: TypeAlias = Literal["tensorflow"]
+CustomLibrary: TypeAlias = Literal["custom"]
+
+
 class CustomModel(BaseModel):
-    library: Literal["custom"]
+    library: CustomLibrary
     custom_function: Any
 
 
 class LibraryModel(BaseModel):
-    library: Literal[
-        "sklearn", "scikit-learn", "xgboost", "xgb", "pytorch", "torch", "tensorflow"
-    ]
+    library: SklearnLibrary | XGBoostLibrary | PytorchLibrary | TensorflowLibrary
     module: str
     name: str
     params: dict | None = None
@@ -47,7 +52,7 @@ class LibraryModel(BaseModel):
 
         self._initialized_model = initialized_model
 
-    def evaluate(y_test, y_pred) -> dict[str, float]:
+    def evaluate(self, y_test, y_pred) -> dict[str, float]:
         r2 = r2_score(y_test, y_pred)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
         return {"r2_score": r2, "rmse": rmse}
@@ -92,7 +97,6 @@ def validate_model_params(
         try:
             with open(model_config) as file:
                 model_config = json.load(file)
-
         except FileNotFoundError as e:
             logger.error(f"Could not find file: {model_config}")
             raise e
@@ -106,14 +110,11 @@ def validate_model_params(
     ), "Each list element in `model_config` must be a dictionary."
 
     initialized_models: list[SklearnModel | XGBoostModel | CustomModel] = []
-
     for model in model_config:
         if model["library"] in ["sklearn", "scikit-learn"]:
             initialized_models.append(SklearnModel(**model))
-
         elif model["library"] in ["xgboost", "xgb"]:
             initialized_models.append(XGBoostModel(**model))
-
         else:
             raise ValueError(
                 f"Library {model['library']} is not supported. Valid library names "
@@ -122,5 +123,4 @@ def validate_model_params(
                 "that takes in train-test split data and returns an nd.array or pd.Series of "
                 "predictions. See the documentation for more details."
             )
-
     return initialized_models

@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetProcessor:
+    """
+    A class to process validated datasets to prepare them for model training and evaluation.
+
+    ### Attributes:
+        dataset (KaggleDataset | LocalDataset): The validated dataset to be processed.
+        data_directory (Path): The directory to save files within for the `save_dataframe`
+    and `split_and_save_data` methods.
+    """
+
     def __init__(
         self,
         dataset: KaggleDataset | LocalDataset,
@@ -28,22 +37,15 @@ class DatasetProcessor:
 
         if isinstance(dataset, LocalDataset):
             file_path = dataset.file_path
+            self.save_name = file_path.stem
             self.data = self._read_from_path(file_path)
-
-            if dataset.save_name is not None:
-                self.save_name = dataset.save_name
-            else:
-                self.save_name = file_path.stem
-
         elif isinstance(dataset, KaggleDataset):
+            self.save_name = f"{dataset.username}_{dataset.dataset_name}"
             self.data = self._download_kaggle_data(
                 dataset.username,
                 dataset.dataset_name,
                 dataset.file_name,
             )
-
-            self.save_name = f"{dataset.username}_{dataset.dataset_name}"
-
         else:
             raise ValueError("Data must be a KaggleDataset or LocalDataset object.")
 
@@ -132,7 +134,7 @@ class DatasetProcessor:
         if missing_values:
             logger.warning(
                 f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
-                f"\nDataFrame: \n{self.data.head(3)}"
+                f"\nDataFrame: \n{df.head(3)}"
             )
             if raise_exception:
                 raise ValueError()
@@ -151,7 +153,9 @@ class DatasetProcessor:
         """
         if self.columns_to_drop is not None:
             df = self.data.drop(self.columns_to_drop, axis=1)
-            logger.info(f"Columns dropped: \n{self.data.head(3)}")
+            logger.info(
+                f"Columns: {self.columns_to_drop} successfully dropped: \n{df.head(3)}"
+            )
 
             self.data = df
 
@@ -180,7 +184,9 @@ class DatasetProcessor:
 
             # Drop the original columns and join the one-hot encoded columns
             df = df.drop(columns=self.columns_to_encode).join(encoded_df)
-            logger.info(f"Data successfully encoded: \n{df.head(3)}")
+            logger.info(
+                f"Columns: {self.columns_to_encode} successfully encoded: \n{df.head(3)}"
+            )
 
             self.data = df
 
@@ -188,38 +194,53 @@ class DatasetProcessor:
 
     def save_dataframe(
         self,
-        file_format: Literal["pickle", "csv", "json", "parquet"] = "pickle",
-    ) -> None:
+        file_format: Literal["pickle", "csv", "json", "parquet"] = "parquet",
+        file_name_ending: str = "",
+    ) -> Path:
         """
         Save the data to a file.
 
         Args:
-            file_path (Path): The path to save the data.
+            file_format (Literal["pickle", "csv", "json", "parquet"], optional): The format to use when saving the data. Defaults to "parquet".
+            file_name_ending (str, optional): A string to append to the end of the file name to differentiate it. Defaults to "".
 
         Raises:
             ValueError: If no valid save path was provided.
+
+        Returns:
+            Path: The path to the saved file.
         """
         try:
-            if file_format == "pickle":
-                file_path = self.data_directory / f"{self.save_name}.pkl"
-                self.data.to_pickle(file_path)
+            if file_format == "parquet":
+                file_path = (
+                    self.data_directory / f"{self.save_name}{file_name_ending}.parquet"
+                )
+                self.data.to_parquet(file_path, index=False, compression="gzip")
 
             elif file_format == "csv":
-                file_path = self.data_directory / f"{self.save_name}.csv"
+                file_path = (
+                    self.data_directory / f"{self.save_name}{file_name_ending}.csv"
+                )
                 self.data.to_csv(file_path, index=False)
 
-            elif file_format == "json":
-                file_path = self.data_directory / f"{self.save_name}.json"
-                self.data.to_json(file_path, orient="records")
+            elif file_format == "pickle":
+                file_path = (
+                    self.data_directory / f"{self.save_name}{file_name_ending}.pkl"
+                )
+                self.data.to_pickle(file_path)
 
-            elif file_format == "parquet":
-                file_path = self.data_directory / f"{self.save_name}.parquet"
-                self.data.to_parquet(file_path, index=False, compression="gzip")
+            elif file_format == "json":
+                file_path = (
+                    self.data_directory / f"{self.save_name}{file_name_ending}.json"
+                )
+                self.data.to_json(file_path, orient="records")
 
             logger.info(f"Data saved to: {file_path}")
 
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")
+
+        return file_path
 
     def split_data(
         self,
@@ -259,7 +280,7 @@ class DatasetProcessor:
     def split_and_save_data(
         self,
         test_size: float = 0.2,
-    ) -> None:
+    ) -> Path:
         """
         Split the data and save it to a single pickle file as a SplitData object.
 
@@ -267,6 +288,9 @@ class DatasetProcessor:
             save_path (Path): The path to save the SplitData object to.
             target_column (str): The column(s) to be used as the target variable(s) or label(s).
             test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+
+        Returns:
+            Path: The path to the saved SplitData object.
         """
         X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
 
@@ -280,6 +304,10 @@ class DatasetProcessor:
         save_path = self.data_directory / f"{self.save_name}_split.pkl"
         with open(save_path, "wb") as file:
             pickle.dump(split_data_obj, file)
+
+        logger.info(f"Split data saved to: {save_path}")
+
+        return save_path
 
 
 class SplitData(BaseModel):
@@ -323,5 +351,35 @@ def load_split_data(
         split_data.X_train,
         split_data.X_test,
         split_data.y_train,
-        split_data.y_test,
+        pd.Series(split_data.y_test),
     )
+
+
+def process_datasets(
+    datasets: list[KaggleDataset | LocalDataset],
+    data_directory: Path,
+) -> list[Path]:
+    """
+    Downloads and processes data from multiple datasets that have been validated.
+
+    Args:
+        datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
+        data_directory (Path): The directory to save the original and processed data.
+
+    Returns:
+        list[Path]: A list of paths to the saved split data files for input into models.
+    """
+    split_data_paths = []
+
+    for dataset in datasets:
+        processor = DatasetProcessor(dataset, data_directory)
+        processor.save_dataframe()
+        processor.has_missing_values()
+        processor.drop_columns()
+        processor.encode_columns()
+        processor.save_dataframe(file_name_ending="_cleaned")
+        save_path = processor.split_and_save_data()
+
+        split_data_paths.append(save_path)
+
+    return split_data_paths

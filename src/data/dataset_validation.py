@@ -120,7 +120,6 @@ def validate_dataset_params(
         try:
             with open(dataset_params, "r") as file:
                 dataset_params = json.load(file)
-
         except FileNotFoundError as e:
             logger.exception(f"Could not find file: {dataset_params}")
             raise e
