@@ -2,6 +2,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Any, Literal
 
 import config
 from models.model_validation import SklearnModel, XGBoostModel, validate_model_params
@@ -17,11 +18,11 @@ import utils  # noqa: E402
 logger = logging.getLogger(__name__)
 
 
-def train_predict_and_save(
+def train_and_predict(
     models: list[SklearnModel | XGBoostModel],
     split_data_path: Path,
     save_results_path: Path,
-) -> None:
+) -> dict:
     """
     Train and perform predictions using a list of models and save their performance metrics to a file.
     Data can be provided as a single dataset or as a train-test split. If a single dataset is provided,
@@ -51,10 +52,15 @@ def train_predict_and_save(
         results = model.evaluate(y_test, prediction)
         model_results_dict[model.__class__.__name__] = results
 
-    save_results_path.write_text(json.dumps(model_results_dict, indent=4))
+    return model_results_dict
 
 
-def full_pipeline(custom_models: list | None = None) -> None:
+def run_pipeline(
+    dataset_params: list[dict[str, Any]] | Path | None = None,
+    model_params: list[dict[str, Any]] | Path | None = None,
+    custom_models: list[Any] | None = None,
+    save_data: Literal["original", "cleaned", "both", "none"] = "both",
+) -> None:
     """
     Executes a full pipeline for training and evaluating multiple models on multiple different datasets.
     To change the datasets or models used, simply modify the dictionary entries in the
@@ -66,21 +72,26 @@ def full_pipeline(custom_models: list | None = None) -> None:
     utils.setup_logging()
 
     saved_data_directory = config.SAVED_DATA_DIRECTORY
-    dataset_params_path = config.DATA_PARAMS_PATH
     model_directory = config.MODEL_DIRECTORY
-    model_params_path = config.MODEL_PARAMS_PATH
+    model_results_path = config.MODEL_RESULTS_PATH
 
-    datasets = validate_dataset_params(dataset_params_path)
+    if dataset_params is None:
+        dataset_params = config.DATA_PARAMS_PATH
+    if model_params is None:
+        model_params = config.MODEL_PARAMS_PATH
+
+    datasets = validate_dataset_params(dataset_params)
     split_data_paths = process_datasets(datasets, saved_data_directory)
 
-    # Convert the parameters into a list of model objects
-    models = validate_model_params(model_params_path)
-
+    validated_models = validate_model_params(model_params)
     for data_path in split_data_paths:
-        train_predict_and_save(
-            models, data_path, model_directory / "model_results.json"
+        model_results = train_and_predict(
+            validated_models,
+            data_path,
+            model_directory / "model_results.json",
         )
+        model_results_path.write_text(json.dumps(model_results, indent=4))
 
 
 if __name__ == "__main__":
-    full_pipeline()
+    run_pipeline()
