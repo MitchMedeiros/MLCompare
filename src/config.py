@@ -5,3 +5,4 @@ DATA_PARAMS_PATH = Path(__file__).resolve().parent / "data" / "dataset_parameter
 
 MODEL_DIRECTORY = Path(__file__).resolve().parent / "models" / "saved_data"
 MODEL_PARAMS_PATH = Path(__file__).resolve().parent / "models" / "model_parameters.json"
+MODEL_RESULTS_PATH = MODEL_DIRECTORY / "model_results.json"
