@@ -3,3 +3,4 @@
 __pycache__/
 main.log
 testing.ipynb
+run_pipeline_results/
