@@ -3,8 +3,3 @@
 __pycache__/
 main.log
 testing.ipynb
-src/models/saved_models/*
-data_wrangling.ipynb
-src/data/data.parquet
-src/data/saved_data/*
-src/models/saved_data/*
