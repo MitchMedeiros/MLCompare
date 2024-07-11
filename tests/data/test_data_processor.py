@@ -1,19 +1,13 @@
 import logging
-import sys
 import unittest
 from pathlib import Path
 
 import pandas as pd
 from kaggle.rest import ApiException
 
-root_dir = Path(__file__).resolve().parents[2].as_posix()
-sys.path.append(root_dir)
-import util  # noqa: E402
+from mlcompare import DataProcessor
 
-from src.data.data_processor import DataProcessor  # noqa: E402
-
-util.setup_logging()
-logger = logging.getLogger("src.data.data_processor")
+data_processor_logger = logging.getLogger("mlcompare.data.data_processor")
 
 
 class TestDataProcessor(unittest.TestCase):
@@ -176,7 +170,7 @@ class TestDataProcessor(unittest.TestCase):
         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
         processor = DataProcessor(data=data)
 
-        processor.save_data(file_path=save_path)
+        processor.save_dataframe(file_path=save_path)
         self.assertTrue(save_path.exists())
 
         save_path.unlink()
@@ -187,7 +181,7 @@ class TestDataProcessor(unittest.TestCase):
         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
         processor = DataProcessor(data=data)
 
-        processor.save_data(file_path=save_path)
+        processor.save_dataframe(file_path=save_path)
         self.assertTrue(save_path.exists())
 
         save_path.unlink()
@@ -214,7 +208,7 @@ class TestDataProcessor(unittest.TestCase):
         )
         processor.drop_columns(kaggle_dataset_params["columns_to_drop"])
         processor.encode_columns(kaggle_dataset_params["columns_to_encode"])
-        processor.save_data(save_path, file_format)
+        processor.save_dataframe(save_path, file_format)
 
         self.assertTrue(save_path.exists())
         df = pd.read_parquet(save_path)
@@ -275,7 +269,7 @@ class TestDataProcessor(unittest.TestCase):
     def test_logs_warning_message(self):
         data = {"A": [1, 2, None], "B": ["", "value", "."]}
         processor = DataProcessor(data=data)
-        with self.assertLogs(logger, level="WARNING"):
+        with self.assertLogs(data_processor_logger, level="WARNING"):
             processor.has_missing_values(raise_exception=False)
 
 

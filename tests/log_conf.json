@@ -1,0 +1,31 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "primaryFormatter": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    },
+    "handlers": {
+        "consoleHandler": {
+            "class": "logging.StreamHandler",
+            "level": "ERROR",
+            "formatter": "primaryFormatter",
+            "stream": "ext://sys.stdout"
+        },
+        "fileHandler": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "formatter": "primaryFormatter",
+            "filename": "tests.log",
+            "mode": "a"
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["consoleHandler", "fileHandler"]
+        }
+    }
+}
+

@@ -1,18 +1,10 @@
 import logging
-import sys
 import unittest
 from pathlib import Path
 
-root_dir = Path(__file__).resolve().parents[2].as_posix()
-sys.path.append(root_dir)
-import util  # noqa: E402
+from mlcompare import KaggleDataset
 
-data_dir = Path(__file__).resolve().parents[1].as_posix()
-sys.path.append(data_dir)
-from data.dataset_validation import KaggleDataset, LocalDataset, validate_dataset_params
-
-util.setup_logging()
-logger = logging.getLogger("src.data.dataset_validation")
+dataset_validation_logger = logging.getLogger("mlcompare.data.dataset_validation")
 
 
 class TestDataProcessor(unittest.TestCase):

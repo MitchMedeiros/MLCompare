@@ -44,6 +44,13 @@ docs = [
 [project.urls]
 "Homepage" = "https://github.com/MitchMedeiros/ml-compare"
 
+[tool.hatch.build.targets.wheel]
+packages = ["mlcompare"]
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+xfail_strict = true
+
 [tool.ruff]
 line-length = 99
 

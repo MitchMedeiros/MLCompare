@@ -27,9 +27,7 @@ __pycache__/
 
 
 # Test files
-tests/log_conf.json
-tests/util.py
-tests/tests.log
+tests.log
 testing.py
 testing.ipynb
 run_pipeline_results
