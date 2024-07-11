@@ -2,5 +2,8 @@
 .mypy_cache
 __pycache__/
 main.log
+testing.py
 testing.ipynb
 run_pipeline_results/
+log_conf.json
+util.py

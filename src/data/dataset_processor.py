@@ -38,7 +38,7 @@ class DatasetProcessor:
         self.save_name = self._generate_save_name()
         self.target_column = dataset.target_column
         self.columns_to_drop = dataset.columns_to_drop
-        self.columns_to_encode = dataset.columns_to_encode
+        self.columns_to_onehot_encode = dataset.columns_to_onehot_encode
 
     def _validate_init_params(self, dataset: DatasetType, data_directory: Path) -> None:
         if not isinstance(dataset, KaggleDataset | LocalDataset):
@@ -158,25 +158,25 @@ class DatasetProcessor:
 
     def onehot_encode_columns(self) -> pd.DataFrame:
         """
-        One-hot encodes the specified columns and replaces them in the DataFrame. Uses `self.columns_to_encode`,
+        One-hot encodes the specified columns and replaces them in the DataFrame. Uses `self.columns_to_onehot_encode`,
         originating from the dataset parameters config.
 
         Returns:
             pd.DataFrame: The stored DataFrame with the specified columns replaced with one-hot encoded columns.
         """
-        if self.columns_to_encode:
+        if self.columns_to_onehot_encode:
             df = self.data
             encoder = OneHotEncoder(sparse_output=False)
-            encoded_array = encoder.fit_transform(df[self.columns_to_encode])
+            encoded_array = encoder.fit_transform(df[self.columns_to_onehot_encode])
 
             encoded_columns_df = pd.DataFrame(
                 encoded_array,
-                columns=encoder.get_feature_names_out(self.columns_to_encode),
+                columns=encoder.get_feature_names_out(self.columns_to_onehot_encode),
             )
 
-            df = df.drop(columns=self.columns_to_encode).join(encoded_columns_df)
+            df = df.drop(columns=self.columns_to_onehot_encode).join(encoded_columns_df)
             logger.info(
-                f"Columns: {self.columns_to_encode} successfully one-hot encoded:\n{df.head(3)}"
+                f"Columns: {self.columns_to_onehot_encode} successfully one-hot encoded:\n{df.head(3)}"
             )
             self.data = df
         return self.data

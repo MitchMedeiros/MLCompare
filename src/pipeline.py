@@ -10,6 +10,8 @@ from data.dataset_validation import validate_dataset_params
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["train_and_predict", "run_pipeline"]
+
 
 def train_and_predict(
     models: list[SklearnModel | XGBoostModel], split_data_path: Path
@@ -59,6 +61,8 @@ def run_pipeline(
     """
     if isinstance(save_directory, str):
         save_directory = Path(save_directory)
+
+    save_directory.mkdir(exist_ok=True)
 
     model_results_path = save_directory / "model_results.json"
     datasets = validate_dataset_params(dataset_params)

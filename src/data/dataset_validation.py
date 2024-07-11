@@ -5,10 +5,9 @@ from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel
 
-from .dataset_processor import DatasetType
-
 logger = logging.getLogger(__name__)
 
+DatasetType: TypeAlias = Any
 Parameters: TypeAlias = dict[str, Any]
 ParametersList: TypeAlias = list[Parameters]
 

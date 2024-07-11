@@ -8,10 +8,11 @@ from kaggle.rest import ApiException
 
 root_dir = Path(__file__).resolve().parents[2].as_posix()
 sys.path.append(root_dir)
-import utils  # noqa: E402
+import util  # noqa: E402
+
 from src.data.data_processor import DataProcessor  # noqa: E402
 
-utils.setup_logging()
+util.setup_logging()
 logger = logging.getLogger("src.data.data_processor")
 
 
