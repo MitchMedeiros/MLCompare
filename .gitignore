@@ -1,9 +1,39 @@
-.DS_Store
-.mypy_cache
+# Virtual environments
+env/
+env3*/
+venv/
+.venv/
+__pypackages__/
+
+# Package distribution and build files
+*.egg-info/
+dist/
+/build/
+_build/
+
+# IDEs and editors
+.vs/
+.vscode/
+.idea/
+
+# Python bytecode and cache files
 __pycache__/
-main.log
+*.py[cod]
+*$py.class
+.cache/
+.mypy_cache/
+.pytest_cache/
+/.ruff_cache/
+
+
+# Test files
+tests/log_conf.json
+tests/util.py
+tests/tests.log
 testing.py
 testing.ipynb
-run_pipeline_results/
-log_conf.json
-util.py
+run_pipeline_results
+
+# Other
+.DS_Store
+.env
