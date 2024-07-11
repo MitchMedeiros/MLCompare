@@ -1,0 +1,52 @@
+[build-system]
+requires = ['hatchling', 'hatch-fancy-pypi-readme>=22.5.0']
+build-backend = "hatchling.build"
+
+[project]
+name = "mlcompare"
+version = "0.1.0"
+description = "Compare ML models across different libraries on one or many datasets."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Mitchell Medeiros"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas[pyarrow]>=2.0.0",
+    "pydantic>=2.0.0",
+    "plotly>=4.0.0",
+    "kaggle>=1.0.0",
+]
+
+[project.optional-dependencies]
+models = [
+    "scikit-learn",
+    "xgboost",
+    "torch",
+    "tensorflow",
+]
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "ruff>=0.3.0",
+]
+docs = [
+    "sphinx>=3.5.4",
+    "sphinx-rtd-theme>=0.5.2"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/MitchMedeiros/ml-compare"
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+ignore = ["E741"]
+pydocstyle = { convention = 'google' }
