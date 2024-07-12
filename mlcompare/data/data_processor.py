@@ -10,6 +10,8 @@ from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
+from ..types import SplitDataTuple
+
 logger = logging.getLogger(__name__)
 
 
@@ -209,11 +211,7 @@ class DataProcessor:
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")
 
-    def split_data(
-        self,
-        target_column: str,
-        test_size: float = 0.2,
-    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    def split_data(self, target_column: str, test_size: float = 0.2) -> SplitDataTuple:
         """Split the data into its features and target.
 
         Args:
@@ -284,7 +282,10 @@ class SplitData(BaseModel):
 
 
 def split_and_save_data(
-    data: pd.DataFrame, target_column: str, save_path: Path, test_size: float = 0.2
+    data: pd.DataFrame,
+    target_column: str,
+    save_path: Path,
+    test_size: float = 0.2,
 ) -> None:
     """
     A convenience function for DataProcessor.split_and_save_data().
@@ -302,11 +303,7 @@ def split_and_save_data(
     )
 
 
-def load_split_data(
-    load_path: Path,
-) -> tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series
-]:
+def load_split_data(load_path: Path) -> SplitDataTuple:
     """
     Load a SplitData object from a pickle file and return the data it was holding.
 

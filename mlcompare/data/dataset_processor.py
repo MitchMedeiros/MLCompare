@@ -2,7 +2,7 @@ import logging
 import pickle
 from io import StringIO
 from pathlib import Path
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import kaggle
 import pandas as pd
@@ -10,14 +10,10 @@ from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-from .dataset_validation import KaggleDataset, LocalDataset
+from ..types import DatasetType, SplitDataTuple
+from .datasets import KaggleDataset, LocalDataset
 
 logger = logging.getLogger(__name__)
-
-DatasetType: TypeAlias = KaggleDataset | LocalDataset
-SplitDataTuple: TypeAlias = tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series
-]
 
 
 class DatasetProcessor:
