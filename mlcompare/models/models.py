@@ -22,19 +22,12 @@ LibraryNames: TypeAlias = (
 CustomNames: TypeAlias = Literal["custom"]
 
 
-class MLModel(BaseModel):
-    def evaluate(self, y_test, y_pred) -> dict[str, float]:
-        r2 = r2_score(y_test, y_pred)
-        rmse = mean_squared_error(y_test, y_pred, squared=False)
-        return {"r2_score": r2, "rmse": rmse}
-
-
-class CustomModel(MLModel):
+class CustomModel(BaseModel):
     library: CustomNames
     custom_function: Any
 
 
-class LibraryModel(MLModel):
+class LibraryModel(BaseModel):
     library: LibraryNames
     module: str
     name: str
@@ -78,6 +71,12 @@ class XGBoostModel(LibraryModel):
 
     def predict(self, X_test):
         return self.initialized_model.predict(X_test)
+
+
+def evaluate_prediction(y_test, y_pred) -> dict[str, float]:
+    r2 = r2_score(y_test, y_pred)
+    rmse = mean_squared_error(y_test, y_pred, squared=False)
+    return {"r2_score": r2, "rmse": rmse}
 
 
 # class PytorchModel(LibraryModel):

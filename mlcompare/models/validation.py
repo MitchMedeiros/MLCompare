@@ -4,8 +4,9 @@ import json
 import logging
 from pathlib import Path
 
+from ..data.split_data import load_split_data
 from ..types import MLModelTypes, ModelConfig
-from .models import CustomModel, SklearnModel, XGBoostModel
+from .models import CustomModel, SklearnModel, XGBoostModel, evaluate_prediction
 
 logger = logging.getLogger(__name__)
 
@@ -44,3 +45,36 @@ def validate_model_params(model_config: ModelConfig) -> list[MLModelTypes]:
                 "predictions. See the documentation for more details."
             )
     return initialized_models
+
+
+def train_and_predict(models: list[MLModelTypes], split_data_path: Path) -> dict:
+    """
+    Train and perform predictions using a list of models and save their performance metrics to a file.
+    Data can be provided as a single dataset or as a train-test split. If a single dataset is provided,
+    the data will be split into training and testing sets. If both nonsplit_data and
+    split_data are provided, split_data will be used.
+
+    Args:
+        models (list[MLModelTypes]): A list of models to process.
+        split_data_path (Path): The path to a pickle file containing a SplitData object.
+    """
+    try:
+        X_train, X_test, y_train, y_test = load_split_data(split_data_path)
+    except FileNotFoundError:
+        logger.error(
+            f"No file or incorrect path when attempting to load split data from: {split_data_path}"
+        )
+        raise
+
+    model_results_dict = {}
+    for model in models:
+        if isinstance(model, CustomModel):
+            pass
+
+        else:
+            model.train(X_train, y_train)
+            prediction = model.predict(X_test)
+            results = evaluate_prediction(y_test, prediction)
+            model_results_dict[model.__class__.__name__] = results
+
+    return model_results_dict
