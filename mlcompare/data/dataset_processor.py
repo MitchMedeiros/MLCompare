@@ -4,6 +4,7 @@ import logging
 import pickle
 from io import StringIO
 from pathlib import Path
+from typing import Literal
 
 import kaggle
 import pandas as pd
@@ -273,13 +274,19 @@ class DatasetProcessor:
         return save_path
 
 
-def process_datasets(datasets: list[DatasetType], data_directory: Path) -> list[Path]:
+def process_datasets(
+    datasets: list[DatasetType],
+    data_directory: Path,
+    save_datasets: Literal["original", "cleaned", "both", "none"] = "both",
+) -> list[Path]:
     """
     Downloads and processes data from multiple datasets that have been validated.
 
     Args:
         datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
         data_directory (Path): Directory to save the original and processed data.
+        save_datasets (Literal["original", "cleaned", "both", "none"], optional): Which datasets to save.
+        Original is the unprocessed data, cleaned is after processing such as encoding. Defaults to "both".
 
     Returns:
         list[Path]: List of paths to the saved split data files for input into models.
@@ -287,11 +294,17 @@ def process_datasets(datasets: list[DatasetType], data_directory: Path) -> list[
     split_data_paths = []
     for dataset in datasets:
         processor = DatasetProcessor(dataset, data_directory)
-        processor.save_dataframe()
+
+        if save_datasets in ["original", "both"]:
+            processor.save_dataframe()
+
         processor.has_missing_values()
         processor.drop_columns()
         processor.onehot_encode_columns()
-        processor.save_dataframe(file_name_ending="_cleaned")
+
+        if save_datasets in ["cleaned", "both"]:
+            processor.save_dataframe(file_name_ending="_cleaned")
+
         save_path = processor.split_and_save_data()
         split_data_paths.append(save_path)
 

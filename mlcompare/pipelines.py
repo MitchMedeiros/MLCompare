@@ -17,7 +17,7 @@ def run_pipeline(
     dataset_params: DatasetConfig,
     model_params: ModelConfig,
     custom_models: list[Any] | None = None,
-    save_data: Literal["original", "cleaned", "both", "none"] = "both",
+    save_datasets: Literal["original", "cleaned", "both", "none"] = "both",
     save_directory: str | Path = Path("run_pipeline_results"),
 ) -> None:
     """
@@ -32,12 +32,13 @@ def run_pipeline(
         save_directory = Path(save_directory)
     save_directory.mkdir(exist_ok=True)
 
-    model_results_path = save_directory / "model_results.json"
+    # Validate the dataset and model parameters before proceeding
     datasets = validate_dataset_params(dataset_params)
     models = validate_model_params(model_params)
 
-    split_data_paths = process_datasets(datasets, save_directory)
+    split_data_paths = process_datasets(datasets, save_directory, save_datasets)
 
+    model_results_path = save_directory / "model_results.json"
     for data_path in split_data_paths:
         model_results = train_and_predict(models, data_path)
         model_results_path.write_text(json.dumps(model_results, indent=4))

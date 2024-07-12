@@ -14,7 +14,7 @@ Parameters: TypeAlias = dict[str, Any]
 ParametersList: TypeAlias = list[Parameters]
 
 
-def read_from_json(file_path: Path) -> ParametersList:
+def read_json(file_path: Path) -> ParametersList:
     """
     Read from a JSON file.
 
@@ -133,7 +133,7 @@ def validate_dataset_params(dataset_params: ParametersList | Path) -> list[Datas
     ```
     """
     if isinstance(dataset_params, Path):
-        dataset_params = read_from_json(dataset_params)
+        dataset_params = read_json(dataset_params)
 
     assert isinstance(
         dataset_params, list
