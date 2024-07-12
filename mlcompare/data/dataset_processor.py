@@ -1,17 +1,18 @@
+from __future__ import annotations as _annotations
+
 import logging
 import pickle
 from io import StringIO
 from pathlib import Path
-from typing import Literal
 
 import kaggle
 import pandas as pd
-from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-from ..types import DatasetType, SplitDataTuple
+from ..types import DataFileSuffix, DatasetType, SplitDataTuple
 from .datasets import KaggleDataset, LocalDataset
+from .split_data import SplitData
 
 logger = logging.getLogger(__name__)
 
@@ -179,14 +180,14 @@ class DatasetProcessor:
 
     def save_dataframe(
         self,
-        file_format: Literal["pickle", "csv", "json", "parquet"] = "parquet",
+        file_format: DataFileSuffix = "parquet",
         file_name_ending: str = "",
     ) -> Path:
         """
         Saves the data to a file in the specified format.
 
         Args:
-            file_format (Literal["pickle", "csv", "json", "parquet"], optional): The format to use when saving the data. Defaults to "parquet".
+            file_format (DataFileSuffix, optional): The format to use when saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
 
         Returns:
@@ -236,7 +237,10 @@ class DatasetProcessor:
         y = self.data[self.target_column]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=0
+            X,
+            y,
+            test_size=test_size,
+            random_state=0,
         )
         logger.info(
             f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
@@ -267,38 +271,6 @@ class DatasetProcessor:
             pickle.dump(split_data_obj, file)
         logger.info(f"Split data saved to: {save_path}")
         return save_path
-
-
-class SplitData(BaseModel):
-    """
-    Validates and holds the split data from `sklearn.model_selection.train_test_split`.
-    """
-
-    X_train: pd.DataFrame
-    X_test: pd.DataFrame
-    y_train: pd.DataFrame | pd.Series
-    y_test: pd.DataFrame | pd.Series
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
-def load_split_data(load_path: Path) -> SplitDataTuple:
-    """
-    Loads a SplitData object from a pickle file and returns the data it was holding.
-
-    Args:
-        load_path (Path): Path to a pickle file of a SplitData object.
-
-    Returns:
-        SplitDataTuple: Tuple of length 4 containing the training and testing data split by features and target.
-    """
-    with open(load_path, "rb") as file:
-        split_data = pickle.load(file)
-
-    if not isinstance(split_data, SplitData):
-        raise TypeError("Loaded data must be of type SplitData.")
-
-    return split_data.X_train, split_data.X_test, split_data.y_train, split_data.y_test
 
 
 def process_datasets(datasets: list[DatasetType], data_directory: Path) -> list[Path]:

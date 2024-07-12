@@ -1,3 +1,5 @@
+from __future__ import annotations as _annotations
+
 import logging
 from pathlib import Path
 from typing import Literal

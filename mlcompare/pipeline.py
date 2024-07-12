@@ -1,21 +1,20 @@
+from __future__ import annotations as _annotations
+
 import json
 import logging
 from pathlib import Path
 from typing import Any, Literal
 
-from models.model_validation import SklearnModel, XGBoostModel, validate_model_params
-
-from data.dataset_processor import load_split_data, process_datasets
-from data.dataset_validation import validate_dataset_params
+from .data.dataset_processor import process_datasets
+from .data.split_data import load_split_data
+from .data.validation import validate_dataset_params
+from .models.validation import CustomModel, validate_model_params
+from .types import DatasetConfig, MLModelTypes, ModelConfig
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["train_and_predict", "run_pipeline"]
 
-
-def train_and_predict(
-    models: list[SklearnModel | XGBoostModel], split_data_path: Path
-) -> dict:
+def train_and_predict(models: list[MLModelTypes], split_data_path: Path) -> dict:
     """
     Train and perform predictions using a list of models and save their performance metrics to a file.
     Data can be provided as a single dataset or as a train-test split. If a single dataset is provided,
@@ -23,7 +22,7 @@ def train_and_predict(
     split_data are provided, split_data will be used.
 
     Args:
-        models (list[SklearnModel | XGBoostModel]): A list of models to process.
+        models (list[MLModelTypes]): A list of models to process.
         split_data_path (Path): The path to a pickle file containing a SplitData object.
     """
     try:
@@ -36,17 +35,21 @@ def train_and_predict(
 
     model_results_dict = {}
     for model in models:
-        model.train(X_train, y_train)
-        prediction = model.predict(X_test)
-        results = model.evaluate(y_test, prediction)
-        model_results_dict[model.__class__.__name__] = results
+        if isinstance(model, CustomModel):
+            pass
+
+        else:
+            model.train(X_train, y_train)
+            prediction = model.predict(X_test)
+            results = model.evaluate(y_test, prediction)
+            model_results_dict[model.__class__.__name__] = results
 
     return model_results_dict
 
 
 def run_pipeline(
-    dataset_params: list[dict[str, Any]] | Path,
-    model_params: list[dict[str, Any]] | Path,
+    dataset_params: DatasetConfig,
+    model_params: ModelConfig,
     custom_models: list[Any] | None = None,
     save_data: Literal["original", "cleaned", "both", "none"] = "both",
     save_directory: str | Path = Path("run_pipeline_results"),
@@ -61,7 +64,6 @@ def run_pipeline(
     """
     if isinstance(save_directory, str):
         save_directory = Path(save_directory)
-
     save_directory.mkdir(exist_ok=True)
 
     model_results_path = save_directory / "model_results.json"

@@ -1,3 +1,5 @@
+from __future__ import annotations as _annotations
+
 import logging
 import pickle
 from io import StringIO
@@ -6,11 +8,11 @@ from typing import Any
 
 import kaggle
 import pandas as pd
-from pydantic import BaseModel, ConfigDict
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
 from ..types import SplitDataTuple
+from .split_data import SplitData
 
 logger = logging.getLogger(__name__)
 
@@ -268,64 +270,26 @@ class DataProcessor:
             pickle.dump(split_data, file)
 
 
-class SplitData(BaseModel):
-    """
-    A class to validate and hold the split data from sklearn.model_selection.train_test_split.
-    """
-
-    X_train: pd.DataFrame
-    X_test: pd.DataFrame
-    y_train: pd.DataFrame | pd.Series
-    y_test: pd.DataFrame | pd.Series
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
 def split_and_save_data(
-    data: pd.DataFrame,
+    data: Any | pd.DataFrame | Path,
     target_column: str,
     save_path: Path,
     test_size: float = 0.2,
 ) -> None:
     """
-    A convenience function for DataProcessor.split_and_save_data().
-    Splits the data and save it to a single pickle file as a SplitData object.
+    A convenience function for DataProcessor(data).split_and_save_data().
+    Splits the data and saves it to a single pickle file as a SplitData object.
 
     Args:
-        data (pd.DataFrame): The data to be split.
-        target_column (str): The column(s) to be used as the target variable(s) or label(s).
-        save_path (Path): The path to save the SplitData object to.
-        test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+        data (Any | pd.DataFrame | Path): Data to be split. Can be the raw data, a DataFrame,
+        or a Path object to a file containing data,
+        target_column (str): Column(s) to be used as the target variable(s) or label(s).
+        save_path (Path): Path to save the SplitData object to.
+        test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
     """
     processor = DataProcessor(data)
     processor.split_and_save_data(
-        save_path=save_path, target_column=target_column, test_size=test_size
-    )
-
-
-def load_split_data(load_path: Path) -> SplitDataTuple:
-    """
-    Load a SplitData object from a pickle file and return the data it was holding.
-
-    Args:
-        load_path (Path): The path to a pickle file of a SplitData object.
-
-    Returns:
-        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series]: A tuple containing the training
-        and testing data for features and target variables.
-            X_train: Training data for features (pd.DataFrame)
-            X_test: Testing data for features (pd.DataFrame)
-            y_train: Training data for target variable(s) (pd.DataFrame | pd.Series)
-            y_test: Testing data for target variable(s) (pd.DataFrame | pd.Series)
-    """
-    with open(load_path, "rb") as file:
-        split_data = pickle.load(file)
-
-    assert isinstance(split_data, SplitData), "Loaded data must be of type SplitData."
-
-    return (
-        split_data.X_train,
-        split_data.X_test,
-        split_data.y_train,
-        split_data.y_test,
+        save_path=save_path,
+        target_column=target_column,
+        test_size=test_size,
     )
