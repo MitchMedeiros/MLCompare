@@ -8,6 +8,7 @@ from typing import Literal
 
 import kaggle
 import pandas as pd
+from kaggle.rest import ApiException
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
@@ -88,28 +89,57 @@ class DatasetProcessor:
         self,
         dataset_owner: str,
         dataset_name: str,
-        data_file_name: str,
+        file_name: str,
     ) -> pd.DataFrame:
         """
         Downloads a Kaggle dataset. Overwrites any existing data for the class instance.
-        Currently only tested on CSV files.
+        Currently only implemented for CSV files.
 
         Args:
-            dataset_owner (str): The user(s) under which the dataset is provided.
-            dataset_name (str): The name(s) of the dataset.
-            data_file_name (str): The file(s) to be downloaded from the dataset.
+            dataset_owner (str): The user under which the dataset is provided.
+            dataset_name (str): The name of the dataset.
+            file_name (str): The file to be downloaded from the dataset.
 
         Returns:
             pd.DataFrame: The downloaded data as a Pandas DataFrame.
+
+        Raises:
+            ConnectionError: If unable to authenticate with Kaggle.
+            ValueError: If unable to find any Kaggle dataset files for the provided user and dataset names.
+            ValueError: If the file name provided doesn't match any of the files in the dataset.
         """
         try:
             data = kaggle.api.datasets_download_file(
-                dataset_owner, dataset_name, data_file_name
+                dataset_owner,
+                dataset_name,
+                file_name,
             )
             logger.info("Data successfully downloaded")
-        except Exception as e:
-            logger.exception("Exception when calling Kaggle API")
-            raise e
+        except OSError:
+            # Should normally never occur since empty environment variables are added in the __init__.py,
+            # which should be sufficient for dataset downloads.
+            raise ConnectionRefusedError(
+                "Unable to authenticate with Kaggle. Ensure that you have a Kaggle API key saved "
+                "to the appropriate file or your username and password in your environment variables. "
+                "See: https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md#api-credentials"
+            )
+        except ApiException:
+            try:
+                dataset_files = kaggle.api.datasets_list_files(
+                    dataset_owner, dataset_name
+                )
+            except ApiException:
+                raise ValueError(
+                    "No Kaggle dataset files found using the provided username and dataset name."
+                )
+
+            if file_name not in [
+                file["name"] for file in dataset_files["datasetFiles"]
+            ]:
+                raise ValueError(
+                    f"Dataset: {dataset_owner}/{dataset_name} was successfully found but doesn't "
+                    f"contain any file named: {file_name}"
+                )
 
         return pd.read_csv(StringIO(data))
 
