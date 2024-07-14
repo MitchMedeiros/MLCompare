@@ -13,15 +13,21 @@ data_processor_logger = logging.getLogger("mlcompare.data.dataset_processor")
 class TestDatasetProcessor(unittest.TestCase):
     current_dir = Path(__file__).parent.resolve()
     two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
+    save_directory = "run_pipeline_results"
+
+    def test_init_with_dict(self):
+        data = self.two_column_data
+        processor = DatasetProcessor(data=data, data_directory=self.save_directory)
+        self.assertTrue(processor.data.equals(data))
+
+    def test_init_with_invalid_data(self):
+        # Initialize DatasetProcessor with an invalid data type
+        with self.assertRaises(Exception):
+            DatasetProcessor(data=123, data_directory=self.save_directory)
 
     def test_init_with_dataframe(self):
-        # Create a DataFrame for testing
         data = pd.DataFrame(self.two_column_data)
-
-        # Initialize DatasetProcessor with the DataFrame
-        processor = DatasetProcessor(data=data)
-
-        # Check if the data attribute is set correctly
+        processor = DatasetProcessor(data=data, data_directory=self.save_directory)
         self.assertTrue(processor.data.equals(data))
 
     def test_init_with_path_csv(self):
@@ -30,13 +36,9 @@ class TestDatasetProcessor(unittest.TestCase):
         data = pd.DataFrame(self.two_column_data)
         data.to_csv(csv_path, index=False)
 
-        # Initialize DatasetProcessor with the CSV file path
-        processor = DatasetProcessor(data=csv_path)
-
-        # Check if the data attribute is set correctly
+        processor = DatasetProcessor(data=csv_path, data_directory=self.save_directory)
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary CSV file
         csv_path.unlink()
 
     def test_init_with_path_parquet(self):
@@ -45,13 +47,11 @@ class TestDatasetProcessor(unittest.TestCase):
         data = pd.DataFrame(self.two_column_data)
         data.to_parquet(parquet_path)
 
-        # Initialize DatasetProcessor with the pickle file path
-        processor = DatasetProcessor(data=parquet_path)
-
-        # Check if the data attribute is set correctly
+        processor = DatasetProcessor(
+            data=parquet_path, data_directory=self.save_directory
+        )
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary pickle file
         parquet_path.unlink()
 
     def test_init_with_path_pkl(self):
@@ -60,13 +60,9 @@ class TestDatasetProcessor(unittest.TestCase):
         data = pd.DataFrame(self.two_column_data)
         data.to_pickle(pkl_path)
 
-        # Initialize DatasetProcessor with the pickle file path
-        processor = DatasetProcessor(data=pkl_path)
-
-        # Check if the data attribute is set correctly
+        processor = DatasetProcessor(data=pkl_path, data_directory=self.save_directory)
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary pickle file
         pkl_path.unlink()
 
     def test_init_with_path_json(self):
@@ -75,13 +71,9 @@ class TestDatasetProcessor(unittest.TestCase):
         data = pd.DataFrame(self.two_column_data)
         data.to_json(json_path, orient="records")
 
-        # Initialize DatasetProcessor with the JSON file path
-        processor = DatasetProcessor(data=json_path)
-
-        # Check if the data attribute is set correctly
+        processor = DatasetProcessor(data=json_path, data_directory=self.save_directory)
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary JSON file
         json_path.unlink()
 
     def test_init_with_unsupported_file_type(self):
@@ -91,22 +83,9 @@ class TestDatasetProcessor(unittest.TestCase):
         data.to_html(html_path)
 
         with self.assertRaises(Exception):
-            DatasetProcessor(data=html_path)
+            DatasetProcessor(data=html_path, data_directory=self.save_directory)
 
-        # Clean up the temporary JSON file
         html_path.unlink()
-
-    def test_init_with_no_data(self):
-        # Initialize DatasetProcessor with no data
-        processor = DatasetProcessor()
-
-        # Check if the data attribute is an empty DataFrame
-        self.assertTrue(processor.data.empty)
-
-    def test_init_with_invalid_data(self):
-        # Initialize DatasetProcessor with an invalid data type
-        with self.assertRaises(Exception):
-            DatasetProcessor(data=123)
 
     def test_download_kaggle_data_success(self):
         owner = "anthonytherrien"

@@ -18,7 +18,6 @@ def setup_logging(config_file: Path = default_config_path) -> None:
 
     # Create loggers, handlers, and formatters from the configuration
     logging.config.dictConfig(config)
-
     logger.info("Logging configuration loaded.")
 
     # Function to log uncaught exceptions
@@ -33,7 +32,6 @@ def setup_logging(config_file: Path = default_config_path) -> None:
         )
 
     sys.excepthook = handle_exception
-
     logger.info("Uncaught exception handler set.")
 
 
