@@ -34,35 +34,46 @@ class CustomModel(BaseModel):
 
 
 class LibraryModel(ABC, BaseModel):
-    module: str
     name: str
+    module: str | None = None
     params: dict | None = None
-    initialized_model: Any = None
+    _ml_model: Any = None
 
-    def initialize_model(self, library_name: str) -> None:
+    def instantiate_model(
+        self,
+        library_name: Literal[
+            "sklearn",
+            "xgboost",
+            "torch",
+            "tensorflow",
+        ],
+    ) -> None:
+        if self.module:
+            full_import = f"{library_name}.{self.module}"
+        else:
+            full_import = library_name
+
         try:
-            # Import the Library or module
-            model_module = import_module(f"{library_name}.{self.module}")
+            model_module = import_module(full_import)
         except ImportError:
-            logger.error(f"Could not import module {library_name}.{self.module}")
+            logger.error(f"Could not import module {full_import}")
             raise
 
         try:
-            # Get the class from the module
             model_class = getattr(model_module, self.name)
         except AttributeError:
             logger.error(f"Could not find class {self.name} in module {self.module}")
             raise
 
         try:
-            initialized_model = model_class(**self.params)
+            ml_model = model_class(**self.params)
         except Exception:
             logger.error(
                 f"Could not initialize model {self.name} with params {self.params}"
             )
             raise
 
-        self.initialized_model = initialized_model
+        self._ml_model = ml_model
 
     @abstractmethod
     def model_post_init(self, Any):
@@ -79,24 +90,24 @@ class LibraryModel(ABC, BaseModel):
 
 class SklearnModel(LibraryModel):
     def model_post_init(self, Any):
-        self.initialize_model("sklearn")
+        self.instantiate_model("sklearn")
 
     def train(self, X_train, y_train) -> None:
-        self.initialized_model.fit(X_train, y_train)
+        self._ml_model.fit(X_train, y_train)
 
     def predict(self, X_test):
-        return self.initialized_model.predict(X_test)
+        return self._ml_model.predict(X_test)
 
 
 class XGBoostModel(LibraryModel):
     def model_post_init(self, Any):
-        self.initialize_model("xgboost")
+        self.instantiate_model("xgboost")
 
     def train(self, X_train, y_train) -> None:
-        self.initialized_model.fit(X_train, y_train)
+        self._ml_model.fit(X_train, y_train)
 
     def predict(self, X_test):
-        return self.initialized_model.predict(X_test)
+        return self._ml_model.predict(X_test)
 
 
 def evaluate_prediction(y_test, y_pred) -> dict[str, float]:
@@ -197,6 +208,68 @@ class ModelFactory:
                 )
 
 
+def evaluate_models(
+    params_list: ParamsInput,
+    split_data: SplitDataTuple,
+    save_directory: Path,
+) -> None:
+    """
+    Train and evaluate models on a dataset.
+
+    Args:
+    -----
+        params_list (ParamsInput): A list of dictionaries containing model parameters.
+        split_data (SplitDataTuple): A tuple containing the training and testing data.
+        save_directory (Path): The directory to save the results to.
+
+    Raises:
+    -------
+        Exception: If a model fails to process.
+    """
+    X_train, X_test, y_train, y_test = split_data
+
+    models = ModelFactory(params_list)
+    for model in models:
+        try:
+            model.train(X_train, y_train)
+            prediction = model.predict(X_test)
+
+            model_results = evaluate_prediction(y_test, prediction)
+            append_model_results(model_results, save_directory)
+        except Exception:
+            logger.error("Failed to process model.")
+            raise
+
+
+def append_model_results(results: dict[str, float], save_directory: Path) -> None:
+    """
+    Append the results of a model evaluation to a file.
+
+    Args:
+    -----
+        results (dict[str, float]): The results of the model evaluation.
+        save_directory (Path): The directory to save the results to.
+    """
+    file_path = save_directory / "model_results.json"
+
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = []
+
+    if not isinstance(data, list):
+        raise ValueError("The existing data in the JSON file is not a list")
+
+    if isinstance(results, dict):
+        data.append(results)
+    else:
+        raise ValueError("`results` should be a dictionary")
+
+    with open(file_path, "w") as file:
+        json.dump(data, file, indent=4)
+
+
 # def train_and_predict(models: list[MLModelTypes], split_data_path: Path) -> dict:
 #     """
 #     Train and perform predictions using a list of models and save their performance metrics to a file.
@@ -237,37 +310,3 @@ class ModelFactory:
 #             model_results_dict[model.__class__.__name__] = results
 
 #     return model_results_dict
-
-
-def evaluate_models(
-    params_list: ParamsInput,
-    split_data: SplitDataTuple,
-    save_directory: Path,
-) -> None:
-    """
-    Train and evaluate models on a dataset.
-
-    Args:
-    -----
-        params_list (ParamsInput): A list of dictionaries containing model parameters.
-        split_data (SplitDataTuple): A tuple containing the training and testing data.
-        save_directory (Path): The directory to save the results to.
-
-    Raises:
-    -------
-        Exception: If a model fails to process.
-    """
-    X_train, X_test, y_train, y_test = split_data
-
-    models = ModelFactory(params_list)
-    for model in models:
-        try:
-            model.train(X_train, y_train)
-            prediction = model.predict(X_test)
-
-            results = evaluate_prediction(y_test, prediction)
-            results_path = save_directory / "model_results.json"
-            results_path.write_text(json.dumps(results, indent=4))
-        except Exception:
-            logger.error("Failed to process model.")
-            raise

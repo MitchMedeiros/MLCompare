@@ -42,10 +42,10 @@ class DatasetProcessor:
             raise ValueError("Data directory must be a Path object.")
 
         self.data = dataset.get_data()
-        self.target_column = dataset.target_column
+        self.target = dataset.target
         self.save_name = dataset.save_name
-        self.columns_to_drop = dataset.columns_to_drop
-        self.columns_to_onehot_encode = dataset.columns_to_onehot_encode
+        self.drop = dataset.drop
+        self.onehot_encode = dataset.onehot_encode
 
         self.data_directory = data_directory
 
@@ -84,11 +84,9 @@ class DatasetProcessor:
         Returns:
             pd.DataFrame: The DataFrame with the specified columns dropped.
         """
-        if self.columns_to_drop:
-            df = self.data.drop(self.columns_to_drop, axis=1)
-            logger.info(
-                f"Columns: {self.columns_to_drop} successfully dropped:\n{df.head(3)}"
-            )
+        if self.drop:
+            df = self.data.drop(self.drop, axis=1)
+            logger.info(f"Columns: {self.drop} successfully dropped:\n{df.head(3)}")
             self.data = df
         return self.data
 
@@ -99,19 +97,19 @@ class DatasetProcessor:
         Returns:
             pd.DataFrame: The stored DataFrame with the specified columns replaced with one-hot encoded columns.
         """
-        if self.columns_to_onehot_encode:
+        if self.onehot_encode:
             df = self.data
             encoder = OneHotEncoder(sparse_output=False)
-            encoded_array = encoder.fit_transform(df[self.columns_to_onehot_encode])
+            encoded_array = encoder.fit_transform(df[self.onehot_encode])
 
             encoded_columns_df = pd.DataFrame(
                 encoded_array,
-                columns=encoder.get_feature_names_out(self.columns_to_onehot_encode),
+                columns=encoder.get_feature_names_out(self.onehot_encode),
             )
 
-            df = df.drop(columns=self.columns_to_onehot_encode).join(encoded_columns_df)
+            df = df.drop(columns=self.onehot_encode).join(encoded_columns_df)
             logger.info(
-                f"Columns: {self.columns_to_onehot_encode} successfully one-hot encoded:\n{df.head(3)}"
+                f"Columns: {self.onehot_encode} successfully one-hot encoded:\n{df.head(3)}"
             )
             self.data = df
         return self.data
@@ -162,7 +160,7 @@ class DatasetProcessor:
         using scikit-learn's `train_test_split` function.
 
         Args:
-            target_column (str): The column(s) to be used as the target variable(s).
+            target (str): The column(s) to be used as the target variable(s).
             test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
@@ -172,11 +170,11 @@ class DatasetProcessor:
                 y_train (pd.DataFrame | pd.Series): Training data for target variable(s).
                 y_test (pd.DataFrame | pd.Series): Testing data for target variable(s).
         """
-        if self.target_column is None:
+        if self.target is None:
             raise ValueError("No target column provided within the dataset parameters.")
 
-        X = self.data.drop(columns=self.target_column)
-        y = self.data[self.target_column]
+        X = self.data.drop(columns=self.target)
+        y = self.data[self.target]
 
         X_train, X_test, y_train, y_test = train_test_split(
             X,
@@ -214,7 +212,9 @@ class DatasetProcessor:
         logger.info(f"Split data saved to: {save_path}")
         return save_path
 
-    def process_and_save_dataset(self, save_original: bool, save_cleaned: bool):
+    def process_and_save_dataset(
+        self, save_original: bool, save_cleaned: bool
+    ) -> SplitDataTuple:
         if save_original:
             self.save_dataframe()
 

@@ -32,7 +32,7 @@ def run_pipeline(
 
     split_data = process_datasets(dataset_params, save_directory)
     for data in split_data:
-        evaluate_models(model_params, split_data, save_directory)  # type: ignore
+        evaluate_models(model_params, data, save_directory)
 
 
 # def file_based_pipeline(

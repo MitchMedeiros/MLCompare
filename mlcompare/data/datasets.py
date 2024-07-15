@@ -20,16 +20,16 @@ class BaseDataset(ABC, BaseModel):
 
     Attributes:
     -----------
-        target_column (str): Column name for the target of the predictions.
+        target (str): Column name for the target of the predictions.
         save_name (str | None): The name to use for files saved from this dataset. Should be unique across datasets.
-        columns_to_drop (list[str] | None): List of column names to be dropped from the dataset.
-        columns_to_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        drop (list[str] | None): List of column names to be dropped from the dataset.
+        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
-    target_column: str
+    target: str
     save_name: str | None = None
-    columns_to_drop: list[str] | None = None
-    columns_to_onehot_encode: list[str] | None = None
+    drop: list[str] | None = None
+    onehot_encode: list[str] | None = None
 
     @abstractmethod
     def validate_data(self) -> None:
@@ -51,11 +51,11 @@ class LocalDataset(BaseDataset):
     Attributes:
     -----------
         file_path (str | Path): The path to the local dataset file.
-        target_column (str): Column name for the target of the predictions.
+        target (str): Column name for the target of the predictions.
         save_name (str | None): The name to use for files saved from this dataset. Should be unique across datasets.
         If None, the file will be saved with the same name as the original file.
-        columns_to_drop (list[str] | None): List of column names to be dropped from the dataset.
-        columns_to_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        drop (list[str] | None): List of column names to be dropped from the dataset.
+        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
     file_path: str | Path
@@ -111,30 +111,30 @@ class KaggleDataset(BaseDataset):
     Attributes:
     -----------
         username (str): Username of the Kaggle user who owns the dataset.
-        dataset_name (str): Name of the Kaggle dataset.
-        file_name (str): Name of the file to be downloaded from the dataset.
-        target_column (str): Column name for the target of the predictions.
+        dataset (str): Name of the Kaggle dataset.
+        file (str): Name of the file to be downloaded from the dataset.
+        target (str): Column name for the target of the predictions.
         save_name (str | None): The name to use for files saved from this dataset. Should be unique across datasets.
-        If None, the file will be named `username_dataset_name`.
-        columns_to_drop (list[str] | None): List of column names to be dropped from the dataset.
-        columns_to_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        If None, the file will be named `username_dataset`.
+        drop (list[str] | None): List of column names to be dropped from the dataset.
+        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
     username: str
-    dataset_name: str
-    file_name: str
+    dataset: str
+    file: str
 
     def model_post_init(self, Any) -> None:
         self.validate_data()
         self.create_save_name()
 
     def validate_data(self) -> None:
-        if not self.file_name.endswith(".csv"):
+        if not self.file.endswith(".csv"):
             raise ValueError("The dataset file should be in CSV format.")
 
     def create_save_name(self) -> None:
         if self.save_name is None:
-            self.save_name = self.username + "_" + self.dataset_name
+            self.save_name = self.username + "_" + self.dataset
 
     def get_data(self) -> pd.DataFrame:
         """
@@ -156,8 +156,8 @@ class KaggleDataset(BaseDataset):
         try:
             data = kaggle.api.datasets_download_file(
                 self.username,
-                self.dataset_name,
-                self.file_name,
+                self.dataset,
+                self.file,
             )
 
             file_like = StringIO(data)
@@ -175,19 +175,19 @@ class KaggleDataset(BaseDataset):
         except ApiException:
             try:
                 dataset_files = kaggle.api.datasets_list_files(
-                    self.username, self.dataset_name
+                    self.username, self.dataset
                 )
             except ApiException:
                 raise ValueError(
                     "No Kaggle dataset files found using the provided username and dataset name."
                 )
 
-            if self.file_name not in [
-                file["name"] for file in dataset_files["datasetFiles"]
+            if self.file not in [
+                file_metadata["name"] for file_metadata in dataset_files["datasetFiles"]
             ]:
                 raise ValueError(
-                    f"Dataset: {self.username}/{self.dataset_name} was successfully found but doesn't "
-                    f"contain any file named: {self.file_name}"
+                    f"Dataset: {self.username}/{self.dataset} was successfully found but doesn't "
+                    f"contain any file named: {self.file}"
                 )
 
         raise Exception("An unknown error occurred while downloading the dataset.")
@@ -231,20 +231,20 @@ class DatasetFactory:
 
         Required keys for all dataset types:
             dataset_type Literal["kaggle", "local"]: Type of dataset. Accepts 'kaggle' or 'local'.
-            target_column (str): Name of the target column in the dataset.
+            target (str): Name of the target column in the dataset.
 
         Additional required keys for 'local' datasets:
             file_path (str): Path to the local dataset file. It can be relative or absolute.
 
         Additional required keys for 'kaggle' datasets:
             username (str): Kaggle username of the dataset owner.
-            dataset_name (str): Name of the Kaggle dataset.
-            file_name (str): Name of the file to download from the dataset.
+            dataset (str): Name of the Kaggle dataset.
+            file (str): Name of the file to download from the dataset.
 
         Optional Keys:
             save_name (str): Name to use for files saved from this dataset. Should be unique across datasets.
-            columns_to_drop (list[str]): List of column names to drop from the downloaded data.
-            columns_to_onehot_encode (list[str]): List of column names to encode using a specific encoding method.
+            drop (list[str]): List of column names to drop from the downloaded data.
+            onehot_encode (list[str]): List of column names to encode using a specific encoding method.
 
     Raises:
     -------
