@@ -5,17 +5,8 @@ from typing import Any, TypeAlias
 
 import pandas as pd
 
-from .data.datasets import (
-    HuggingFaceDataset,
-    KaggleDataset,
-    LocalDataset,
-    OpenMLDataset,
-)
 from .models.models import CustomModel, SklearnModel, XGBoostModel
 
-DatasetType: TypeAlias = (
-    LocalDataset | KaggleDataset | HuggingFaceDataset | OpenMLDataset
-)
 SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame,
     pd.DataFrame,
@@ -23,7 +14,9 @@ SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame | pd.Series,
 ]
 
-ParamsInput: TypeAlias = str | Path | list[dict[str, Any]]
-"""asdf"""
+ParamsList: TypeAlias = list[dict[str, Any]]
+
+ParamsInput: TypeAlias = str | Path | ParamsList
+"""str | Path | list[dict[str, Any]] - User inputs for pipelines"""
 
 MLModelTypes: TypeAlias = SklearnModel | XGBoostModel | CustomModel

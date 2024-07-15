@@ -83,7 +83,7 @@ class ParamsReader:
             raise
 
     @staticmethod
-    def _validate_params_list_type(params_list: Any) -> None:
+    def _validate_params_list_type(params_list: list[dict[str, Any]]) -> None:
         assert isinstance(
             params_list, list
         ), "`params_list` must be a list of dictionaries or a path to .json file containing one."

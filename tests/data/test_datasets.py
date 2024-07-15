@@ -198,7 +198,7 @@ class TestDatasetFactory:
 
         factory = DatasetFactory(params_list)
         for dataset in factory:
-            assert isinstance(dataset, BaseDataset)
+            assert isinstance(dataset, LocalDataset)
 
     def test_init_kaggle(self):
         params_list = [
@@ -220,7 +220,7 @@ class TestDatasetFactory:
 
         factory = DatasetFactory(params_list)
         for dataset in factory:
-            assert isinstance(dataset, BaseDataset)
+            assert isinstance(dataset, KaggleDataset)
 
     def init_mixed(self):
         params_list = [
