@@ -5,8 +5,6 @@ from typing import Any, TypeAlias
 
 import pandas as pd
 
-from .models.models import CustomModel, SklearnModel, XGBoostModel
-
 SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame,
     pd.DataFrame,
@@ -18,5 +16,3 @@ ParamsList: TypeAlias = list[dict[str, Any]]
 
 ParamsInput: TypeAlias = str | Path | ParamsList
 """str | Path | list[dict[str, Any]] - User inputs for pipelines"""
-
-MLModelTypes: TypeAlias = SklearnModel | XGBoostModel | CustomModel

@@ -260,7 +260,8 @@ def process_datasets(
 def process_datasets_to_files(
     params_list: ParamsInput,
     data_directory: Path,
-    save_datasets: Literal["original", "cleaned", "both", "none"] = "both",
+    save_original: bool = True,
+    save_cleaned: bool = True,
 ) -> list[Path]:
     """
     Downloads and processes data from multiple datasets that have been validated.
@@ -268,8 +269,8 @@ def process_datasets_to_files(
     Args:
         datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
         data_directory (Path): Directory to save the original and processed data.
-        save_datasets (Literal["original", "cleaned", "both", "none"], optional): Which datasets to save.
-        Original is the unprocessed data, cleaned is after processing such as encoding. Defaults to "both".
+        save_original (bool): Whether to save the original data.
+        save_cleaned (bool): Whether to save the processed, nonsplit data.
 
     Returns:
         list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
@@ -279,14 +280,14 @@ def process_datasets_to_files(
     for dataset in datasets:
         processor = DatasetProcessor(dataset, data_directory)
 
-        if save_datasets in ["original", "both"]:
+        if save_original:
             processor.save_dataframe()
 
         processor.has_missing_values()
         processor.drop_columns()
         processor.onehot_encode_columns()
 
-        if save_datasets in ["cleaned", "both"]:
+        if save_cleaned:
             processor.save_dataframe(file_name_ending="_cleaned")
 
         save_path = processor.split_and_save_data()
