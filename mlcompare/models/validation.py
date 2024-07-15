@@ -5,13 +5,29 @@ import logging
 from pathlib import Path
 
 from ..data.split_data import load_split_data
-from ..types import MLModelTypes, ModelConfig
+from ..types import MLModelTypes, ParamsInput
 from .models import CustomModel, SklearnModel, XGBoostModel, evaluate_prediction
 
 logger = logging.getLogger(__name__)
 
 
-def validate_model_params(model_config: ModelConfig) -> list[MLModelTypes]:
+def validate_model_params(model_config: ParamsInput) -> list[MLModelTypes]:
+    """
+    Validate the model configuration and return a list of initialized models.
+
+    Args:
+    -----
+        model_config (ParamsInput): A list of dictionaries containing the model configuration.
+
+    Returns:
+    --------
+        list[MLModelTypes]: A list of initialized models.
+
+    Raises:
+    -------
+        FileNotFoundError: If the model configuration file does not exist.
+        ValueError: If the library name is not supported.
+    """
     if isinstance(model_config, Path):
         try:
             with open(model_config) as file:
@@ -55,8 +71,17 @@ def train_and_predict(models: list[MLModelTypes], split_data_path: Path) -> dict
     split_data are provided, split_data will be used.
 
     Args:
+    -----
         models (list[MLModelTypes]): A list of models to process.
         split_data_path (Path): The path to a pickle file containing a SplitData object.
+
+    Returns:
+    --------
+        dict: A dictionary containing the performance metrics of each model.
+
+    Raises:
+    -------
+        FileNotFoundError: If the split_data_path does not exist.
     """
     try:
         X_train, X_test, y_train, y_test = load_split_data(split_data_path)

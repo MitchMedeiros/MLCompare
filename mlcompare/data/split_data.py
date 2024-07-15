@@ -30,9 +30,11 @@ def load_split_data(load_path: Path) -> SplitDataTuple:
     Loads a SplitData object from a pickle file and returns the data it was holding.
 
     Args:
+    -----
         load_path (Path): Path to a pickle file of a SplitData object.
 
     Returns:
+    --------
         SplitDataTuple: Tuple of length 4 containing the training and testing data split by features and target.
     """
     with open(load_path, "rb") as file:

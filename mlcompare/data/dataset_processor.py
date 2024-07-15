@@ -12,7 +12,7 @@ from kaggle.rest import ApiException
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-from ..types import DataFileSuffix, DatasetType, SplitDataTuple
+from ..types import DatasetType, SplitDataTuple
 from .datasets import KaggleDataset, LocalDataset
 from .split_data import SplitData
 
@@ -34,7 +34,7 @@ class DatasetProcessor:
         self.data_directory = data_directory
 
         self.data = self._load_data()
-        self.save_name = self._generate_save_name()
+        self.save_name = dataset.save_name
         self.target_column = dataset.target_column
         self.columns_to_drop = dataset.columns_to_drop
         self.columns_to_onehot_encode = dataset.columns_to_onehot_encode
@@ -46,15 +46,9 @@ class DatasetProcessor:
         if not isinstance(data_directory, Path):
             raise ValueError("Data directory must be a Path object.")
 
-    def _generate_save_name(self) -> str:
-        if isinstance(self.dataset, LocalDataset):
-            return self.dataset.file_path.stem
-        elif isinstance(self.dataset, KaggleDataset):
-            return f"{self.dataset.username}_{self.dataset.dataset_name}"
-
     def _load_data(self) -> pd.DataFrame:
         if isinstance(self.dataset, LocalDataset):
-            df = self._read_from_path(self.dataset.file_path)
+            df = self._read_from_path(self.dataset.file_path)  # type: ignore
         elif isinstance(self.dataset, KaggleDataset):
             df = self._download_kaggle_data(
                 self.dataset.username,
@@ -69,19 +63,22 @@ class DatasetProcessor:
     def _read_from_path(self, file_path: Path) -> pd.DataFrame:
         try:
             extension = file_path.suffix
-            if extension == ".parquet":
-                df = pd.read_parquet(file_path)
-            elif extension == ".csv":
-                df = pd.read_csv(file_path)
-            elif extension == ".pkl":
-                df = pd.read_pickle(file_path)
-            elif extension == ".json":
-                df = pd.read_json(file_path)
-            else:
-                raise ValueError("Data file must be a Parquet, CSV, PKL, or JSON file.")
-        except FileNotFoundError as e:
+            match extension:
+                case ".parquet":
+                    df = pd.read_parquet(file_path)
+                case ".csv":
+                    df = pd.read_csv(file_path)
+                case ".pkl":
+                    df = pd.read_pickle(file_path)
+                case ".json":
+                    df = pd.read_json(file_path)
+                case _:
+                    raise ValueError(
+                        "Data file must be a .parquet, .csv, .pkl, or .json file."
+                    )
+        except FileNotFoundError:
             logger.exception(f"File not found: {file_path}")
-            raise e
+            raise
 
         return df
 
@@ -146,10 +143,12 @@ class DatasetProcessor:
     def has_missing_values(self, raise_exception: bool = True) -> bool:
         """
         Checks for missing values: NaN, "", and "." in the DataFrame and logs them.
-        If `raise_exception` is True, raises a ValueError if any are found.
 
         Returns:
             bool: True if there are missing values, False otherwise.
+
+        Raises:
+            ValueError: If missing values are found and `raise_exception` is True.
         """
         df = self.data
 
@@ -186,8 +185,7 @@ class DatasetProcessor:
 
     def onehot_encode_columns(self) -> pd.DataFrame:
         """
-        One-hot encodes the specified columns and replaces them in the DataFrame. Uses `self.columns_to_onehot_encode`,
-        originating from the dataset parameters config.
+        One-hot encodes the specified columns and replaces them in the DataFrame.
 
         Returns:
             pd.DataFrame: The stored DataFrame with the specified columns replaced with one-hot encoded columns.
@@ -211,14 +209,15 @@ class DatasetProcessor:
 
     def save_dataframe(
         self,
-        file_format: DataFileSuffix = "parquet",
+        file_format: Literal["parquet", "csv", "json", "pickle"] = "parquet",
         file_name_ending: str = "",
     ) -> Path:
         """
         Saves the data to a file in the specified format.
 
         Args:
-            file_format (DataFileSuffix, optional): The format to use when saving the data. Defaults to "parquet".
+            file_format (Literal["parquet", "csv", "json", "pickle"], optional): The format to use when
+            saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
 
         Returns:
@@ -227,18 +226,21 @@ class DatasetProcessor:
         file_path = self.data_directory / f"{self.save_name}{file_name_ending}"
 
         try:
-            if file_format == "parquet":
-                file_path = file_path.with_suffix(".parquet")
-                self.data.to_parquet(file_path, index=False, compression="gzip")
-            elif file_format == "csv":
-                file_path = file_path.with_suffix(".csv")
-                self.data.to_csv(file_path, index=False)
-            elif file_format == "pickle":
-                file_path = file_path.with_suffix(".pkl")
-                self.data.to_pickle(file_path)
-            elif file_format == "json":
-                file_path = file_path.with_suffix(".json")
-                self.data.to_json(file_path, orient="records")
+            match file_format:
+                case "parquet":
+                    file_path = file_path.with_suffix(".parquet")
+                    self.data.to_parquet(file_path, index=False, compression="gzip")
+                case "csv":
+                    file_path = file_path.with_suffix(".csv")
+                    self.data.to_csv(file_path, index=False)
+                case "pickle":
+                    file_path = file_path.with_suffix(".pkl")
+                    self.data.to_pickle(file_path)
+                case "json":
+                    file_path = file_path.with_suffix(".json")
+                    self.data.to_json(file_path, orient="records")
+                case _:
+                    raise ValueError("Invalid file format provided.")
             logger.info(f"Data saved to: {file_path}")
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")

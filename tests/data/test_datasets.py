@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from mlcompare.data.datasets import (
     BaseDataset,
     DatasetFactory,
-    DatasetType,
     KaggleDataset,
     LocalDataset,
 )
@@ -17,18 +16,10 @@ from mlcompare.data.datasets import (
 logger = logging.getLogger(__name__)
 
 
-class TestDatasetType:
-    def test_init_for_valid_str(self):
-        assert DatasetType("kaggle") == DatasetType.KAGGLE
-        assert DatasetType("local") == DatasetType.LOCAL
-
-    def test_invalid_str(self):
-        with pytest.raises(ValueError):
-            DatasetType("random")
-
-    def test_invalid_type(self):
-        with pytest.raises(ValueError):
-            DatasetType(123)
+def create_csv_file(file_path: str | Path):
+    two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
+    data = pd.DataFrame(two_column_data)
+    data.to_csv(file_path, index=False)
 
 
 # Abstract base class with an abstract method `validate_data` shouldn't be instantiable
@@ -116,9 +107,7 @@ class TestKaggleDataset:
 
 class TestLocalDataset:
     test_path = Path("local_dataset.csv")
-    two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
-    data = pd.DataFrame(two_column_data)
-    data.to_csv(test_path, index=False)
+    create_csv_file(test_path)
 
     def test_init(self):
         dataset = LocalDataset(
@@ -194,56 +183,96 @@ class TestLocalDataset:
 
 
 class TestDatasetFactory:
-    def test_create_kaggle_dataset(self):
-        dataset = DatasetFactory.create(
-            dataset_type=DatasetType.KAGGLE,
-            username="some_user",
-            dataset_name="some_dataset",
-            file_name="some_file.csv",
-            target_column="target",
-            columns_to_drop=["col1", "col2"],
-            columns_to_onehot_encode=["col3"],
-        )
+    test_path = Path("local_dataset.csv")
+    test_path_string = "local_dataset.csv"
+    create_csv_file(test_path)
 
-        assert isinstance(dataset, KaggleDataset)
-        assert dataset.username == "some_user"
-        assert dataset.dataset_name == "some_dataset"
-        assert dataset.file_name == "some_file.csv"
-        assert dataset.target_column == "target"
-        assert dataset.columns_to_drop == ["col1", "col2"]
-        assert dataset.columns_to_onehot_encode == ["col3"]
+    def test_init_local(self):
+        params_list = [
+            {
+                "dataset_type": "local",
+                "file_path": "local_dataset.csv",
+                "target_column": "target",
+            },
+        ]
 
-    def test_create_local_dataset(self):
-        test_path = Path("local_dataset.csv")
-        two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
-        data = pd.DataFrame(two_column_data)
-        data.to_csv(test_path, index=False)
+        factory = DatasetFactory(params_list)
+        for dataset in factory:
+            assert isinstance(dataset, BaseDataset)
 
-        dataset = DatasetFactory.create(
-            dataset_type=DatasetType.LOCAL,
-            file_path=test_path,
-            target_column="target",
-            columns_to_drop=["col1", "col2"],
-            columns_to_onehot_encode=["col3"],
-        )
+    def test_init_kaggle(self):
+        params_list = [
+            {
+                "dataset_type": "kaggle",
+                "username": "user1",
+                "dataset_name": "dataset1",
+                "file_name": "file1.csv",
+                "target_column": "target",
+            },
+            {
+                "dataset_type": "kaggle",
+                "username": "user2",
+                "dataset_name": "dataset2",
+                "file_name": "file2.csv",
+                "target_column": "target",
+            },
+        ]
 
-        assert isinstance(dataset, LocalDataset)
-        assert dataset.file_path == test_path
-        assert dataset.target_column == "target"
-        assert dataset.columns_to_drop == ["col1", "col2"]
-        assert dataset.columns_to_onehot_encode == ["col3"]
-        assert dataset.save_name == "local_dataset"
+        factory = DatasetFactory(params_list)
+        for dataset in factory:
+            assert isinstance(dataset, BaseDataset)
 
-        test_path.unlink()
+    def init_mixed(self):
+        params_list = [
+            {
+                "dataset_type": "kaggle",
+                "username": "user1",
+                "dataset_name": "dataset1",
+                "file_name": "file1.csv",
+                "target_column": "target",
+            },
+            {
+                "dataset_type": "local",
+                "file_path": "local_dataset.csv",
+                "target_column": "target",
+            },
+            {
+                "dataset_type": "kaggle",
+                "username": "user2",
+                "dataset_name": "dataset2",
+                "file_name": "file2.csv",
+                "target_column": "target",
+            },
+        ]
+
+        datasets = DatasetFactory(params_list)
+        for dataset in datasets:
+            assert isinstance(dataset, BaseDataset)
 
     def test_invalid_dataset_type(self):
         with pytest.raises(ValueError):
-            DatasetFactory.create(
-                dataset_type="local",
-                username="some_user",
-                dataset_name="some_dataset",
-                file_name="some_file.csv",
-                target_column="target",
-                columns_to_drop=["col1", "col2"],
-                columns_to_onehot_encode=["col3"],
-            )
+            params_list = [
+                {
+                    "dataset_type": "invalid",
+                    "file_path": "local_dataset.csv",
+                    "target_column": "target",
+                },
+            ]
+
+            datasets = DatasetFactory(params_list)
+            for dataset in datasets:
+                pass
+
+    def test_invalid_dataset_type_type(self):
+        with pytest.raises(ValueError):
+            params_list = [
+                {
+                    "dataset_type": 123,
+                    "file_path": "local_dataset.csv",
+                    "target_column": "target",
+                },
+            ]
+
+            datasets = DatasetFactory(params_list)
+            for dataset in datasets:
+                pass

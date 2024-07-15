@@ -1,14 +1,21 @@
 from __future__ import annotations as _annotations
 
 from pathlib import Path
-from typing import Any, Literal, TypeAlias
+from typing import Any, TypeAlias
 
 import pandas as pd
 
-from .data.datasets import KaggleDataset, LocalDataset
+from .data.datasets import (
+    HuggingFaceDataset,
+    KaggleDataset,
+    LocalDataset,
+    OpenMLDataset,
+)
 from .models.models import CustomModel, SklearnModel, XGBoostModel
 
-DatasetType: TypeAlias = KaggleDataset | LocalDataset
+DatasetType: TypeAlias = (
+    LocalDataset | KaggleDataset | HuggingFaceDataset | OpenMLDataset
+)
 SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame,
     pd.DataFrame,
@@ -16,9 +23,7 @@ SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame | pd.Series,
 ]
 
-DatasetConfig: TypeAlias = Path | list[dict[str, Any]]
-ModelConfig: TypeAlias = Path | list[dict[str, Any]]
-
-DataFileSuffix: TypeAlias = Literal["parquet", "csv", "json", "pickle"]
+ParamsInput: TypeAlias = str | Path | list[dict[str, Any]]
+"""asdf"""
 
 MLModelTypes: TypeAlias = SklearnModel | XGBoostModel | CustomModel

@@ -30,6 +30,7 @@ __pycache__/
 tests.log
 testing.py
 testing.ipynb
+local_dataset.csv
 run_pipeline_results
 
 # Other
