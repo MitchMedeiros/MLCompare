@@ -15,7 +15,7 @@ from ..types import ParamsInput, SplitDataTuple
 
 logger = logging.getLogger(__name__)
 
-SklearnLibraryNames: TypeAlias = Literal["sklearn", "scikit-learn"]
+SklearnLibraryNames: TypeAlias = Literal["sklearn", "scikit-learn", "skl"]
 XGBoostLibraryNames: TypeAlias = Literal["xgboost", "xgb"]
 PytorchLibraryNames: TypeAlias = Literal["pytorch", "torch"]
 TensorflowLibraryNames: TypeAlias = Literal["tensorflow", "tf"]
@@ -34,17 +34,17 @@ class CustomModel(BaseModel):
 
 
 class LibraryModel(ABC, BaseModel):
-    library: LibraryNames
     module: str
     name: str
     params: dict | None = None
+    initialized_model: Any = None
 
-    def model_post_init(self, Any) -> None:
+    def initialize_model(self, library_name: str) -> None:
         try:
             # Import the Library or module
-            model_module = import_module(f"{self.module}")
+            model_module = import_module(f"{library_name}.{self.module}")
         except ImportError:
-            logger.error(f"Could not import module {self.module}")
+            logger.error(f"Could not import module {library_name}.{self.module}")
             raise
 
         try:
@@ -65,6 +65,10 @@ class LibraryModel(ABC, BaseModel):
         self.initialized_model = initialized_model
 
     @abstractmethod
+    def model_post_init(self, Any):
+        ...
+
+    @abstractmethod
     def train(self, X_train, y_train) -> None:
         ...
 
@@ -74,6 +78,9 @@ class LibraryModel(ABC, BaseModel):
 
 
 class SklearnModel(LibraryModel):
+    def model_post_init(self, Any):
+        self.initialize_model("sklearn")
+
     def train(self, X_train, y_train) -> None:
         self.initialized_model.fit(X_train, y_train)
 
@@ -82,6 +89,9 @@ class SklearnModel(LibraryModel):
 
 
 class XGBoostModel(LibraryModel):
+    def model_post_init(self, Any):
+        self.initialize_model("xgboost")
+
     def train(self, X_train, y_train) -> None:
         self.initialized_model.fit(X_train, y_train)
 
@@ -153,13 +163,13 @@ class ModelFactory:
             yield ModelFactory.create(**params)
 
     @staticmethod
-    def create(library_name: LibraryNames, **kwargs) -> MLModelType:
+    def create(library: LibraryNames, **kwargs) -> MLModelType:
         """
         Factory method to create a dataset instance based on the dataset type.
 
         Args:
         -----
-            library_type (LibraryNames): The type of dataset to create.
+            library (LibraryNames): The type of dataset to create.
             **kwargs: Arbitrary keyword arguments to be passed to the dataset class constructor.
 
         Returns:
@@ -170,16 +180,16 @@ class ModelFactory:
         -------
             ValueError: If an unknown dataset type is provided.
         """
-        # library_name = library_name.lower()
+        # library = library.lower()
 
-        match library_name:
-            case ["sklearn", "scikit-learn"]:
+        match library:
+            case "sklearn" | "scikit-learn" | "skl":
                 return SklearnModel(**kwargs)
-            case ["xgboost", "xgb"]:
+            case "xgboost" | "xgb":
                 return XGBoostModel(**kwargs)
             case _:
                 raise ValueError(
-                    f"Library: {library_name} is not supported. Valid library names "
+                    f"Library: {library} is not supported. Valid library names "
                     "are: 'sklearn', 'xgboost', 'pytorch', or 'tensorflow'. If your model is not "
                     "in one of these libraries use 'custom' and provide a value for 'custom_function' "
                     "that takes in train-test split data and returns an nd.array or pd.Series of "
