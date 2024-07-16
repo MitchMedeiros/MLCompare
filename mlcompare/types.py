@@ -11,8 +11,7 @@ SplitDataTuple: TypeAlias = tuple[
     pd.DataFrame | pd.Series,
     pd.DataFrame | pd.Series,
 ]
+"""Data for training and testing."""
 
-ParamsList: TypeAlias = list[dict[str, Any]]
-
-ParamsInput: TypeAlias = str | Path | ParamsList
-"""str | Path | list[dict[str, Any]] - User inputs for pipelines"""
+ParamsInput: TypeAlias = str | Path | list[dict[str, Any]]
+"""User input for pipelines, containing information to load and process datasets or to create ml models."""

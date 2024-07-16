@@ -5,7 +5,7 @@ from .models.models import (
     ModelFactory,  # noqa: F401
     SklearnModel,  # noqa: F401
     XGBoostModel,  # noqa: F401
-    evaluate_models,  # noqa: F401
+    process_models,  # noqa: F401
 )
 from .params_reader import ParamsReader  # noqa: F401
-from .pipelines import run_pipeline  # noqa: F401
+from .pipelines import full_pipeline  # noqa: F401

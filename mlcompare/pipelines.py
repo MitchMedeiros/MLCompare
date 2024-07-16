@@ -2,21 +2,22 @@ from __future__ import annotations as _annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from .data.dataset_processor import process_datasets
-from .models.models import evaluate_models
+from .models.models import process_models
 from .types import ParamsInput
 
 logger = logging.getLogger(__name__)
 
 
-def run_pipeline(
+def full_pipeline(
     dataset_params: ParamsInput,
     model_params: ParamsInput,
     custom_models: list[Any] | None = None,
-    save_datasets: Literal["original", "cleaned", "both", "none"] = "both",
-    save_directory: str | Path = Path("run_pipeline_results"),
+    save_original_data: bool = True,
+    save_cleaned_data: bool = True,
+    save_directory: str | Path = Path("pipeline_results"),
 ) -> None:
     """
     Executes a full pipeline for training and evaluating multiple models on multiple different datasets.
@@ -30,9 +31,19 @@ def run_pipeline(
         save_directory = Path(save_directory)
     save_directory.mkdir(exist_ok=True)
 
-    split_data = process_datasets(dataset_params, save_directory)
+    split_data = process_datasets(
+        dataset_params,
+        save_directory,
+        save_original_data,
+        save_cleaned_data,
+    )
     for data in split_data:
-        evaluate_models(model_params, data, save_directory)
+        process_models(model_params, data, save_directory)
+        # pass custom models here ^^^
+
+
+def data_exploration_pipeline():
+    pass
 
 
 # def file_based_pipeline(

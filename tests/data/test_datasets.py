@@ -227,21 +227,21 @@ class TestDatasetFactory:
             {
                 "dataset_type": "kaggle",
                 "username": "user1",
-                "dataset_name": "dataset1",
-                "file_name": "file1.csv",
-                "target_column": "target",
+                "dataset": "dataset1",
+                "file": "file1.csv",
+                "target": "target",
             },
             {
                 "dataset_type": "local",
                 "file_path": "local_dataset.csv",
-                "target_column": "target",
+                "target": "target",
             },
             {
                 "dataset_type": "kaggle",
                 "username": "user2",
-                "dataset_name": "dataset2",
-                "file_name": "file2.csv",
-                "target_column": "target",
+                "dataset": "dataset2",
+                "file": "file2.csv",
+                "target": "target",
             },
         ]
 
@@ -254,8 +254,8 @@ class TestDatasetFactory:
             params_list = [
                 {
                     "dataset_type": "invalid",
-                    "file_path": "local_dataset.csv",
-                    "target_column": "target",
+                    "file": "local_dataset.csv",
+                    "target": "target",
                 },
             ]
 
@@ -269,7 +269,7 @@ class TestDatasetFactory:
                 {
                     "dataset_type": 123,
                     "file_path": "local_dataset.csv",
-                    "target_column": "target",
+                    "target": "target",
                 },
             ]
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Generator, Literal, TypeAlias
 
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..params_reader import ParamsReader
 from ..types import ParamsInput
@@ -27,21 +27,18 @@ class BaseDataset(ABC, BaseModel):
     """
 
     target: str
-    save_name: str | None = None
+    save_name: str | None = Field(None, alias="saveName")
     drop: list[str] | None = None
-    onehot_encode: list[str] | None = None
+    onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
 
     @abstractmethod
-    def validate_data(self) -> None:
-        ...
+    def validate_data(self) -> None: ...
 
     @abstractmethod
-    def create_save_name(self) -> None:
-        ...
+    def create_save_name(self) -> None: ...
 
     @abstractmethod
-    def get_data(self) -> pd.DataFrame:
-        ...
+    def get_data(self) -> pd.DataFrame: ...
 
 
 class LocalDataset(BaseDataset):
@@ -58,7 +55,7 @@ class LocalDataset(BaseDataset):
         onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
-    file_path: str | Path
+    file_path: str | Path = Field(..., alias="path")
 
     def model_post_init(self, Any) -> None:
         # For explicitness; Pydantic already does this
@@ -110,17 +107,17 @@ class KaggleDataset(BaseDataset):
 
     Attributes:
     -----------
-        username (str): Username of the Kaggle user who owns the dataset.
+        user (str): Username of the Kaggle user who owns the dataset.
         dataset (str): Name of the Kaggle dataset.
         file (str): Name of the file to be downloaded from the dataset.
         target (str): Column name for the target of the predictions.
         save_name (str | None): The name to use for files saved from this dataset. Should be unique across datasets.
-        If None, the file will be named `username_dataset`.
+        If None, the file will be named `user_dataset`.
         drop (list[str] | None): List of column names to be dropped from the dataset.
         onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
-    username: str
+    user: str
     dataset: str
     file: str
 
@@ -134,7 +131,7 @@ class KaggleDataset(BaseDataset):
 
     def create_save_name(self) -> None:
         if self.save_name is None:
-            self.save_name = self.username + "_" + self.dataset
+            self.save_name = self.user + "_" + self.dataset
 
     def get_data(self) -> pd.DataFrame:
         """
@@ -155,7 +152,7 @@ class KaggleDataset(BaseDataset):
 
         try:
             data = kaggle.api.datasets_download_file(
-                self.username,
+                self.user,
                 self.dataset,
                 self.file,
             )
@@ -174,9 +171,7 @@ class KaggleDataset(BaseDataset):
             )
         except ApiException:
             try:
-                dataset_files = kaggle.api.datasets_list_files(
-                    self.username, self.dataset
-                )
+                dataset_files = kaggle.api.datasets_list_files(self.user, self.dataset)
             except ApiException:
                 raise ValueError(
                     "No Kaggle dataset files found using the provided username and dataset name."
@@ -186,7 +181,7 @@ class KaggleDataset(BaseDataset):
                 file_metadata["name"] for file_metadata in dataset_files["datasetFiles"]
             ]:
                 raise ValueError(
-                    f"Dataset: {self.username}/{self.dataset} was successfully found but doesn't "
+                    f"Dataset: {self.user}/{self.dataset} was successfully found but doesn't "
                     f"contain any file named: {self.file}"
                 )
 
@@ -237,7 +232,7 @@ class DatasetFactory:
             file_path (str): Path to the local dataset file. It can be relative or absolute.
 
         Additional required keys for 'kaggle' datasets:
-            username (str): Kaggle username of the dataset owner.
+            user (str): Kaggle username of the dataset owner.
             dataset (str): Name of the Kaggle dataset.
             file (str): Name of the file to download from the dataset.
 
@@ -269,15 +264,17 @@ class DatasetFactory:
 
     @staticmethod
     def create(
-        dataset_type: Literal["local", "kaggle", "hugging face", "openml"], **kwargs
+        type: Literal["local", "kaggle", "hugging face", "huggingface", "openml"],
+        **kwargs,
     ) -> DatasetType:
         """
         Factory method to create a dataset instance based on the dataset type.
 
         Args:
         -----
-            dataset_type (Literal["local", "kaggle", "hugging face", "openml"]): The type of dataset to create.
-            **kwargs: Arbitrary keyword arguments to be passed to the dataset class constructor.
+            dataset_type (Literal["local", "kaggle", "hugging face", "huggingface", "openml"]):
+            The type of dataset to create.
+            **kwargs: Keyword arguments passed to the dataset class constructors.
 
         Returns:
         --------
@@ -287,16 +284,14 @@ class DatasetFactory:
         -------
             ValueError: If an unknown dataset type is provided.
         """
-        # dataset_type = dataset_type.lower()
-
-        match dataset_type:
+        match type:
             case "local":
                 return LocalDataset(**kwargs)
             case "kaggle":
                 return KaggleDataset(**kwargs)
-            case "hugging face":
+            case "hugging face" | "huggingface":
                 return HuggingFaceDataset(**kwargs)
             case "openml":
                 return OpenMLDataset(**kwargs)
             case _:
-                raise ValueError(f"Dataset type not implemented: {dataset_type}")
+                raise ValueError(f"Dataset type not implemented: {type}")

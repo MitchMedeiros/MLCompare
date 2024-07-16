@@ -15,22 +15,17 @@ from ..types import ParamsInput, SplitDataTuple
 
 logger = logging.getLogger(__name__)
 
-SklearnLibraryNames: TypeAlias = Literal["sklearn", "scikit-learn", "skl"]
-XGBoostLibraryNames: TypeAlias = Literal["xgboost", "xgb"]
-PytorchLibraryNames: TypeAlias = Literal["pytorch", "torch"]
-TensorflowLibraryNames: TypeAlias = Literal["tensorflow", "tf"]
-LibraryNames: TypeAlias = (
-    SklearnLibraryNames
-    | XGBoostLibraryNames
-    | PytorchLibraryNames
-    | TensorflowLibraryNames
-)
-CustomNames: TypeAlias = Literal["custom"]
-
-
-class CustomModel(BaseModel):
-    library: CustomNames
-    custom_function: Any
+LibraryNames: TypeAlias = Literal[
+    "sklearn",
+    "scikit-learn",
+    "skl",
+    "xgboost",
+    "xgb",
+    "pytorch",
+    "torch",
+    "tensorflow",
+    "tf",
+]
 
 
 class LibraryModel(ABC, BaseModel):
@@ -76,16 +71,13 @@ class LibraryModel(ABC, BaseModel):
         self._ml_model = ml_model
 
     @abstractmethod
-    def model_post_init(self, Any):
-        ...
+    def model_post_init(self, Any): ...
 
     @abstractmethod
-    def train(self, X_train, y_train) -> None:
-        ...
+    def train(self, X_train, y_train) -> None: ...
 
     @abstractmethod
-    def predict(self, X_test):
-        ...
+    def predict(self, X_test): ...
 
 
 class SklearnModel(LibraryModel):
@@ -108,12 +100,6 @@ class XGBoostModel(LibraryModel):
 
     def predict(self, X_test):
         return self._ml_model.predict(X_test)
-
-
-def evaluate_prediction(y_test, y_pred) -> dict[str, float]:
-    r2 = r2_score(y_test, y_pred)
-    rmse = mean_squared_error(y_test, y_pred, squared=False)
-    return {"r2_score": r2, "rmse": rmse}
 
 
 # class PytorchModel(LibraryModel):
@@ -208,7 +194,42 @@ class ModelFactory:
                 )
 
 
-def evaluate_models(
+def evaluate_prediction(y_test, y_pred) -> dict[str, float]:
+    r2 = r2_score(y_test, y_pred)
+    rmse = mean_squared_error(y_test, y_pred)
+    return {"r2_score": r2, "rmse": rmse}
+
+
+def append_model_results(results: dict[str, float], save_directory: Path) -> None:
+    """
+    Append the results of a model evaluation to a file.
+
+    Args:
+    -----
+        results (dict[str, float]): The results of the model evaluation.
+        save_directory (Path): The directory to save the results to.
+    """
+    file_path = save_directory / "model_results.json"
+
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = []
+
+    if not isinstance(data, list):
+        raise ValueError("The existing data in the JSON file is not a list")
+
+    if isinstance(results, dict):
+        data.append(results)
+    else:
+        raise ValueError("`results` should be a dictionary")
+
+    with open(file_path, "w") as file:
+        json.dump(data, file, indent=4)
+
+
+def process_models(
     params_list: ParamsInput,
     split_data: SplitDataTuple,
     save_directory: Path,
@@ -239,35 +260,6 @@ def evaluate_models(
         except Exception:
             logger.error("Failed to process model.")
             raise
-
-
-def append_model_results(results: dict[str, float], save_directory: Path) -> None:
-    """
-    Append the results of a model evaluation to a file.
-
-    Args:
-    -----
-        results (dict[str, float]): The results of the model evaluation.
-        save_directory (Path): The directory to save the results to.
-    """
-    file_path = save_directory / "model_results.json"
-
-    try:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        data = []
-
-    if not isinstance(data, list):
-        raise ValueError("The existing data in the JSON file is not a list")
-
-    if isinstance(results, dict):
-        data.append(results)
-    else:
-        raise ValueError("`results` should be a dictionary")
-
-    with open(file_path, "w") as file:
-        json.dump(data, file, indent=4)
 
 
 # def train_and_predict(models: list[MLModelTypes], split_data_path: Path) -> dict:

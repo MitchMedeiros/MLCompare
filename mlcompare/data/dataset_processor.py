@@ -28,6 +28,7 @@ class DatasetProcessor:
     Processes validated datasets to prepare them for model training and evaluation.
 
     Attributes:
+    -----------
         dataset (DatasetType): A Dataset type object containing a `get_data()` method and attributes needed for data processing.
         data_directory (Path): Directory to save files to for the `save_dataframe` and `split_and_save_data` methods.
     """
@@ -49,14 +50,25 @@ class DatasetProcessor:
 
         self.data_directory = data_directory
 
-    def has_missing_values(self, raise_exception: bool = True) -> bool:
+    def has_missing_values(
+        self, drop_rows: bool = False, raise_exception: bool = True
+    ) -> bool:
         """
-        Checks for missing values: NaN, "", and "." in the DataFrame and logs them.
+        Checks for missing values: NaN, "", and "." in the DataFrame and either logs them, raises an
+        exception, or drops the rows with missing values,
+
+        Args:
+        -----
+            drop_rows (bool, optional): Whether to drop rows with missing values. Defaults to False.
+            raise_exception (bool, optional): Whether to raise an exception if missing values are found.
+            Defaults to True. Ignored if `drop_rows` is True.
 
         Returns:
+        --------
             bool: True if there are missing values, False otherwise.
 
         Raises:
+        -------
             ValueError: If missing values are found and `raise_exception` is True.
         """
         df = self.data
@@ -73,8 +85,16 @@ class DatasetProcessor:
                 f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
                 f"\nDataFrame:\n{df.head(3)}"
             )
-            if raise_exception:
-                raise ValueError()
+            if drop_rows:
+                df = df.dropna()
+                logger.info(
+                    f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
+                )
+                self.data = df
+            elif raise_exception:
+                raise ValueError(
+                    "Missing values found in DataFrame. Set `drop_rows=True` to drop them or `raise_exception=False` to continue processing."
+                )
         return missing_values
 
     def drop_columns(self) -> pd.DataFrame:
@@ -82,6 +102,7 @@ class DatasetProcessor:
         Drops the specified columns from the DataFrame.
 
         Returns:
+        --------
             pd.DataFrame: The DataFrame with the specified columns dropped.
         """
         if self.drop:
@@ -95,6 +116,7 @@ class DatasetProcessor:
         One-hot encodes the specified columns and replaces them in the DataFrame.
 
         Returns:
+        --------
             pd.DataFrame: The stored DataFrame with the specified columns replaced with one-hot encoded columns.
         """
         if self.onehot_encode:
@@ -123,11 +145,13 @@ class DatasetProcessor:
         Saves the data to a file in the specified format.
 
         Args:
+        -----
             file_format (Literal["parquet", "csv", "json", "pickle"], optional): The format to use when
             saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
 
         Returns:
+        --------
             Path: The path to the saved file.
         """
         file_path = self.data_directory / f"{self.save_name}{file_name_ending}"
@@ -160,10 +184,12 @@ class DatasetProcessor:
         using scikit-learn's `train_test_split` function.
 
         Args:
+        -----
             target (str): The column(s) to be used as the target variable(s).
             test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
+        --------
             SplitDataTuple:
                 X_train (pd.DataFrame): Training data for features.
                 X_test (pd.DataFrame): Testing data for features.
@@ -192,9 +218,11 @@ class DatasetProcessor:
         Splits the data and saves it to a single pickle file as a SplitData object.
 
         Args:
+        -----
             test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
+        --------
             Path: The path to the saved SplitData object.
         """
         X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
@@ -238,12 +266,14 @@ def process_datasets(
     Downloads and processes data from multiple datasets that have been validated.
 
     Args:
+    -----
         params_list (ParamsInput): A list of dictionaries containing dataset parameters.
         data_directory (Path): Directory to save the original, processed, and split data to.
         save_original (bool): Whether to save the original data.
         save_cleaned (bool): Whether to save the processed, nonsplit data.
 
     Returns:
+    --------
         A generator containing the split data for input into subsequent pipeline steps via iteration.
     """
     datasets = DatasetFactory(params_list)
@@ -267,12 +297,14 @@ def process_datasets_to_files(
     Downloads and processes data from multiple datasets that have been validated.
 
     Args:
+    -----
         datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
         data_directory (Path): Directory to save the original and processed data.
         save_original (bool): Whether to save the original data.
         save_cleaned (bool): Whether to save the processed, nonsplit data.
 
     Returns:
+    --------
         list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
     """
     split_data_paths = []

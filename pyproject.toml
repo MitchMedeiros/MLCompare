@@ -18,6 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "numpy>=1.23.5,<2.0.0", # for tensorflow compatability
     "pandas[pyarrow]>=2.0.0",
     "pydantic>=2.0.0",
     "plotly>=4.0.0",
@@ -26,19 +27,19 @@ dependencies = [
 
 [project.optional-dependencies]
 models = [
-    "scikit-learn",
-    "xgboost",
-    "torch",
-    "tensorflow",
+    "scikit-learn>=1.5.1",
+    "xgboost>=2.1.0",
+    "torch>=2.0.0",
+    "tensorflow>=2.0.0",
 ]
 dev = [
-    "pytest>=7.0.0",
-    "black>=22.0.0",
-    "ruff>=0.3.0",
+    "pytest>=8.0.0",
+    "black>=24.0.0",
+    "ruff>=0.5.0",
 ]
 docs = [
-    "sphinx>=3.5.4",
-    "sphinx-rtd-theme>=0.5.2"
+    "sphinx>=7.4.0",
+    "sphinx-rtd-theme>=2.0.0"
 ]
 
 [project.urls]

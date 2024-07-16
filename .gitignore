@@ -31,7 +31,8 @@ tests.log
 testing.py
 testing.ipynb
 local_dataset.csv
-run_pipeline_results
+pipeline_results
+tests/data/test.*
 
 # Other
 .DS_Store
