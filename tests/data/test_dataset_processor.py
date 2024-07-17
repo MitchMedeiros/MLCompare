@@ -7,7 +7,7 @@ from kaggle.rest import ApiException
 
 from mlcompare import DatasetProcessor
 
-data_processor_logger = logging.getLogger("mlcompare.data.dataset_processor")
+logger = logging.getLogger("mlcompare.data.dataset_processor")
 
 
 kaggle_dataset_params = {
@@ -261,7 +261,7 @@ class TestDatasetProcessor(unittest.TestCase):
     def test_logs_warning_message(self):
         data = {"A": [1, 2, None], "B": ["", "value", "."]}
         processor = DatasetProcessor(data=data)
-        with self.assertLogs(data_processor_logger, level="WARNING"):
+        with self.assertLogs(logger, level="WARNING"):
             processor.has_missing_values(raise_exception=False)
 
 

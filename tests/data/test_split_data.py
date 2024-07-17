@@ -1,3 +1,4 @@
+import logging
 import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -6,6 +7,8 @@ import pandas as pd
 import pytest
 
 from mlcompare.data.split_data import SplitData, load_split_data
+
+logger = logging.getLogger("mlcompare.data.split_data")
 
 
 @pytest.fixture

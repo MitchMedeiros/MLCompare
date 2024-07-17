@@ -61,7 +61,10 @@ class LibraryModel(ABC, BaseModel):
             raise
 
         try:
-            ml_model = model_class(**self.params)
+            if self.params:
+                ml_model = model_class(**self.params)
+            else:
+                ml_model = model_class()
         except Exception:
             logger.error(
                 f"Could not initialize model {self.name} with params {self.params}"

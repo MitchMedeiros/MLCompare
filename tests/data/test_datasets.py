@@ -19,7 +19,7 @@ from mlcompare.data.datasets import (
     df_from_suffix,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("mlcompare.data.datasets")
 
 
 def create_csv_file(file_path: str | Path) -> None:
@@ -67,7 +67,7 @@ class TestBaseDataset:
 
 
 # Minimal implementation of BaseDataset for testing
-class DummyBaseDataset(BaseDataset):
+class BaseDatasetChild(BaseDataset):
     def model_post_init(self, Any) -> None:
         pass
 
@@ -78,9 +78,9 @@ class DummyBaseDataset(BaseDataset):
         return pd.DataFrame()
 
 
-class TestDummyBaseDataset:
+class TestBaseDatasetChild:
     def test_init(self):
-        dummy_dataset = DummyBaseDataset(
+        dummy_dataset = BaseDatasetChild(
             target="target",
             saveName="dummy_dataset",
             drop=["col1"],
@@ -93,7 +93,7 @@ class TestDummyBaseDataset:
         assert dummy_dataset.onehot_encode == ["col2", "col3"]
 
     def test_no_optional_columns(self):
-        dummy_dataset = DummyBaseDataset(
+        dummy_dataset = BaseDatasetChild(
             target="target",
         )
 
@@ -104,29 +104,29 @@ class TestDummyBaseDataset:
 
     def test_no_target(self):
         with pytest.raises(ValidationError):
-            DummyBaseDataset()
+            BaseDatasetChild()
 
     def test_invalid_target_type(self):
         with pytest.raises(ValidationError):
-            DummyBaseDataset(target=123)
+            BaseDatasetChild(target=123)
 
     def test_invalid_save_name_type(self):
         with pytest.raises(ValidationError):
-            DummyBaseDataset(
+            BaseDatasetChild(
                 target="target",
                 saveName=123,
             )
 
     def test_invalid_drop_type(self):
         with pytest.raises(ValidationError):
-            DummyBaseDataset(
+            BaseDatasetChild(
                 target="target",
                 drop="123",
             )
 
     def test_invalid_onehot_encode_type(self):
         with pytest.raises(ValidationError):
-            DummyBaseDataset(
+            BaseDatasetChild(
                 target="target",
                 onehotEncode="123",
             )

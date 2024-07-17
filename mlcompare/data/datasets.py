@@ -286,8 +286,8 @@ class DatasetFactory:
 
     Attributes:
     -----------
-        params_list (list[dict[str, Any]] | Path): List of dictionaries containing dataset parameters or a Path to
-        a .json file with one. For a list of keys required in each dictionary, see below:
+        params_list (list[dict[str, Any]] | Path): List of dictionaries containing dataset parameters or a
+        path to a .json file with one. For a list of keys required in each dictionary, see below:
 
         Required keys for all dataset types:
             dataset_type Literal["kaggle", "local"]: Type of dataset. Accepts 'kaggle' or 'local'.
