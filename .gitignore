@@ -33,6 +33,8 @@ testing.ipynb
 local_dataset.csv
 pipeline_results
 tests/data/test.*
+dataset_params.json
+invalid_dataset_params.json
 
 # Other
 .DS_Store

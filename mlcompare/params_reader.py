@@ -16,7 +16,7 @@ class ParamsReader:
 
     Attributes:
     -----------
-        params_list (Union[List[dict[str, Any]], Path]): A list of dictionaries or a path to a JSON file.
+        params_list (list[dict[str, Any]] | str | Path]): List of dictionaries or a path to a JSON file.
     """
 
     @staticmethod
@@ -26,11 +26,11 @@ class ParamsReader:
 
         Args:
         -----
-            params_list (Union[List[dict[str, Any]], Path]): A list of dictionaries or a path to a JSON file.
+            params_list (list[dict[str, Any]] | str | Path]): List of dictionaries or a path to a JSON file.
 
         Returns:
         --------
-            List[dict[str, Any]]: A list of dictionaries containing parameters.
+            list[dict[str, Any]]: List of dictionaries containing parameters.
 
         Raises:
         -------
@@ -38,10 +38,6 @@ class ParamsReader:
             FileNotFoundError: If the specified file does not exist.
             json.JSONDecodeError: If there is an error decoding the JSON file.
         """
-        assert isinstance(
-            params_list, (list, str, Path)
-        ), "`params_list` must be a list of dictionaries or a path to .json file containing one."
-
         if isinstance(params_list, str):
             params_list = Path(params_list)
 
@@ -83,7 +79,7 @@ class ParamsReader:
             raise
 
     @staticmethod
-    def _validate_params_list_type(params_list: list[dict[str, Any]]) -> None:
+    def _validate_params_list_type(params_list: Any) -> None:
         assert isinstance(
             params_list, list
         ), "`params_list` must be a list of dictionaries or a path to .json file containing one."
