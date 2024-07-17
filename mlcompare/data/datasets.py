@@ -75,6 +75,9 @@ class BaseDataset(ABC, BaseModel):
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
 
     @abstractmethod
+    def model_post_init(self, Any) -> None: ...
+
+    @abstractmethod
     def create_save_name(self) -> None: ...
 
     @abstractmethod
@@ -202,7 +205,7 @@ class KaggleDataset(BaseDataset):
             if self.file not in [
                 file_metadata["name"] for file_metadata in dataset_files["datasetFiles"]
             ]:
-                raise ValueError(
+                raise FileNotFoundError(
                     f"Dataset: {self.user}/{self.dataset} was successfully found but doesn't "
                     f"contain any file named: {self.file}"
                 )
@@ -246,11 +249,15 @@ class HuggingFaceDataset(BaseDataset):
 
 
 class OpenMLDataset(BaseDataset):
-    id: int
+    id: int | str
 
+    def model_post_init(self, Any) -> None:
+        self.create_save_name()
+
+    # Called within `get_data` since the dataset name won't be known until data is retrieved
     def create_save_name(self) -> None:
         if self.save_name is None:
-            self.save_name = self.dataset_name
+            self.save_name = f"openml_dataset_{self.id}"
 
     def get_data(self) -> pd.DataFrame:
         from openml.datasets import get_dataset
@@ -262,12 +269,9 @@ class OpenMLDataset(BaseDataset):
             download_features_meta_data=False,
         )
         df = openml_data.get_data()[0]
-        self.dataset_name = openml_data.name
-
         logger.info(
             f"OpenML data successfully loaded and converted to DataFrame:\n{df.head(3)}"
         )
-        self.create_save_name()
         return df
 
 
