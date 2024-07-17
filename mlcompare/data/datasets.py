@@ -75,9 +75,6 @@ class BaseDataset(ABC, BaseModel):
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
 
     @abstractmethod
-    def validate_data(self) -> None: ...
-
-    @abstractmethod
     def create_save_name(self) -> None: ...
 
     @abstractmethod
@@ -217,12 +214,12 @@ class HuggingFaceDataset(BaseDataset):
     repo: str
     file: str
 
+    def model_post_init(self, Any) -> None:
+        self.create_save_name()
+
     def create_save_name(self) -> None:
         if self.save_name is None:
             self.save_name = self.repo
-
-    def validate_data(self) -> None:
-        pass
 
     def get_data(self) -> pd.DataFrame:
         from huggingface_hub import hf_hub_download
@@ -249,14 +246,29 @@ class HuggingFaceDataset(BaseDataset):
 
 
 class OpenMLDataset(BaseDataset):
-    def create_save_name(self) -> None:
-        pass
+    id: int
 
-    def validate_data(self) -> None:
-        pass
+    def create_save_name(self) -> None:
+        if self.save_name is None:
+            self.save_name = self.dataset_name
 
     def get_data(self) -> pd.DataFrame:
-        return pd.DataFrame()
+        from openml.datasets import get_dataset
+
+        openml_data = get_dataset(
+            self.id,
+            download_data=True,
+            download_qualities=False,
+            download_features_meta_data=False,
+        )
+        df = openml_data.get_data()[0]
+        self.dataset_name = openml_data.name
+
+        logger.info(
+            f"OpenML data successfully loaded and converted to DataFrame:\n{df.head(3)}"
+        )
+        self.create_save_name()
+        return df
 
 
 DatasetType: TypeAlias = (
@@ -343,4 +355,7 @@ class DatasetFactory:
             case "openml":
                 return OpenMLDataset(**kwargs)
             case _:
-                raise ValueError(f"Dataset type not implemented: {type}")
+                raise ValueError(
+                    f"type: {type} given in the dataset parameters is not supported. Valid options "
+                    "are: 'local', 'kaggle', 'hugging face', or 'openml'."
+                )
