@@ -10,6 +10,17 @@ from mlcompare import DatasetProcessor
 data_processor_logger = logging.getLogger("mlcompare.data.dataset_processor")
 
 
+kaggle_dataset_params = {
+    "type": "kaggle",
+    "user": "anthonytherrien",
+    "dataset": "restaurant-revenue-prediction-dataset",
+    "file": "restaurant_data.csv",
+    "target": "Revenue",
+    "drop": ["Name"],
+    "onehotEncode": ["Location", "Cuisine", "Parking Availability"],
+}
+
+
 class TestDatasetProcessor(unittest.TestCase):
     current_dir = Path(__file__).parent.resolve()
     two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}

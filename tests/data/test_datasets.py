@@ -16,7 +16,7 @@ from mlcompare.data.datasets import (
 logger = logging.getLogger(__name__)
 
 
-def create_csv_file(file_path: str | Path):
+def create_csv_file(file_path: str | Path) -> None:
     two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
     data = pd.DataFrame(two_column_data)
     data.to_csv(file_path, index=False)
@@ -27,79 +27,79 @@ class TestBaseDataset:
     def test_init(self):
         with pytest.raises(TypeError):
             BaseDataset(
-                target_column="target",
-                columns_to_drop=["col1"],
-                columns_to_onehot_encode=["col2"],
+                target="target",
+                drop=["col1"],
+                onehotEncode=["col2"],
             )
 
 
 class TestKaggleDataset:
     def test_init(self):
         dataset = KaggleDataset(
-            username="some_user",
-            dataset_name="some_dataset",
-            file_name="some_file.csv",
-            target_column="target",
-            columns_to_drop=["col1", "col2"],
-            columns_to_onehot_encode=["col3"],
+            user="some_user",
+            dataset="some_dataset",
+            file="some_file.csv",
+            target="target",
+            drop=["col1", "col2"],
+            onehotEncode=["col3"],
         )
 
-        assert dataset.username == "some_user"
-        assert dataset.dataset_name == "some_dataset"
-        assert dataset.file_name == "some_file.csv"
-        assert dataset.target_column == "target"
-        assert dataset.columns_to_drop == ["col1", "col2"]
-        assert dataset.columns_to_onehot_encode == ["col3"]
+        assert dataset.user == "some_user"
+        assert dataset.dataset == "some_dataset"
+        assert dataset.file == "some_file.csv"
+        assert dataset.target == "target"
+        assert dataset.drop == ["col1", "col2"]
+        assert dataset.onehot_encode == ["col3"]
 
     def test_init_without_optional_columns(self):
         KaggleDataset(
-            username="user",
-            dataset_name="dataset",
-            file_name="file.csv",
-            target_column="target",
+            user="user",
+            dataset="dataset",
+            file="file.csv",
+            target="target",
         )
 
     def test_init_without_target(self):
         with pytest.raises(ValidationError):
             KaggleDataset(
-                username="user",
-                dataset_name="dataset",
-                file_name="file.csv",
-                columns_to_drop=["col1"],
-                columns_to_onehot_encode=["col2"],
+                user="user",
+                dataset="dataset",
+                file="file.csv",
+                drop=["col1"],
+                onehotEncode=["col2"],
             )
 
     def test_special_characters_in_attributes(self):
         special_chars = "!@#$%^&*()"
         dataset = KaggleDataset(
-            username=f"user{special_chars}",
-            dataset_name=f"dataset{special_chars}",
-            file_name=f"file{special_chars}.csv",
-            target_column="target",
-            columns_to_drop=None,
-            columns_to_onehot_encode=None,
+            user=f"user{special_chars}",
+            dataset=f"dataset{special_chars}",
+            file=f"file{special_chars}.csv",
+            target="target",
+            drop=None,
+            onehotEncode=None,
         )
 
-        assert special_chars in dataset.username
-        assert special_chars in dataset.dataset_name
-        assert special_chars in dataset.file_name
+        assert special_chars in dataset.user
+        assert special_chars in dataset.dataset
+        assert special_chars in dataset.file
 
     def test_length_of_attributes(self):
         long_string = "a" * 256
         KaggleDataset(
-            username=long_string,
-            dataset_name=long_string,
-            file_name=f"{long_string}.csv",
-            target_column="target",
+            user=long_string,
+            dataset=long_string,
+            file=f"{long_string}.csv",
+            target="target",
         )
 
-    def test_invalid_file_name(self):
+    def test_invalid_file(self):
         with pytest.raises(ValueError):
             dataset = KaggleDataset(
-                username="user",
-                dataset_name="dataset",
-                file_name="file",
-                target_column="target",
+                user="user",
+                dataset="dataset",
+                file="file",
+                target="target",
             )
 
             dataset.validate_data()
@@ -111,28 +111,28 @@ class TestLocalDataset:
 
     def test_init(self):
         dataset = LocalDataset(
-            file_path=self.test_path,
-            target_column="target",
-            columns_to_drop=["col1", "col2"],
-            columns_to_onehot_encode=["col3"],
+            path=self.test_path,
+            target="target",
+            drop=["col1", "col2"],
+            onehotEncode=["col3"],
         )
 
         assert dataset.file_path == self.test_path
-        assert dataset.target_column == "target"
-        assert dataset.columns_to_drop == ["col1", "col2"]
-        assert dataset.columns_to_onehot_encode == ["col3"]
+        assert dataset.target == "target"
+        assert dataset.drop == ["col1", "col2"]
+        assert dataset.onehot_encode == ["col3"]
         assert dataset.save_name == "local_dataset"
 
     def test_init_without_optional_columns(self):
         LocalDataset(
-            file_path=self.test_path,
-            target_column="target",
+            path=self.test_path,
+            target="target",
         )
 
-    def test_str_file_path(self):
+    def test_str_path(self):
         dataset = LocalDataset(
-            file_path="local_dataset.csv",
-            target_column="target",
+            path="local_dataset.csv",
+            target="target",
         )
 
         assert dataset.save_name == "local_dataset"
@@ -140,45 +140,45 @@ class TestLocalDataset:
     def test_no_target(self):
         with pytest.raises(ValidationError):
             LocalDataset(
-                file_path=self.test_path,
-                columns_to_drop=["col1"],
-                columns_to_onehot_encode=["col2"],
+                path=self.test_path,
+                drop=["col1"],
+                onehotEncode=["col2"],
             )
 
-    def test_invalid_file_path_with_path_object(self):
+    def test_invalid_path_with_path_object(self):
         with pytest.raises(FileNotFoundError):
             LocalDataset(
-                file_path=Path("file.csv"),
-                target_column="target",
+                path=Path("file.csv"),
+                target="target",
             )
 
-    def test_invalid_file_path_with_str(self):
+    def test_invalid_path_with_str(self):
         with pytest.raises(FileNotFoundError):
             LocalDataset(
-                file_path="file.csv",
-                target_column="target",
+                path="file.csv",
+                target="target",
             )
 
-    def test_invalid_file_path_type(self):
+    def test_invalid_path_type(self):
         with pytest.raises(ValidationError):
             LocalDataset(
-                file_path=123,
-                target_column="target",
+                path=123,
+                target="target",
             )
 
     def test_invalid_target_type(self):
         with pytest.raises(ValidationError):
             LocalDataset(
-                file_path=self.test_path,
-                target_column=123,
+                path=self.test_path,
+                target=123,
             )
 
     def test_invalid_save_name_type(self):
         with pytest.raises(ValidationError):
             LocalDataset(
-                file_path=self.test_path,
-                target_column="target",
-                save_name=123,
+                path=self.test_path,
+                target="target",
+                saveName=123,
             )
 
 
@@ -190,9 +190,9 @@ class TestDatasetFactory:
     def test_init_local(self):
         params_list = [
             {
-                "dataset_type": "local",
-                "file_path": "local_dataset.csv",
-                "target_column": "target",
+                "type": "local",
+                "path": "local_dataset.csv",
+                "target": "target",
             },
         ]
 
@@ -203,18 +203,18 @@ class TestDatasetFactory:
     def test_init_kaggle(self):
         params_list = [
             {
-                "dataset_type": "kaggle",
-                "username": "user1",
-                "dataset_name": "dataset1",
-                "file_name": "file1.csv",
-                "target_column": "target",
+                "type": "kaggle",
+                "user": "user1",
+                "dataset": "dataset1",
+                "file": "file1.csv",
+                "target": "target",
             },
             {
-                "dataset_type": "kaggle",
-                "username": "user2",
-                "dataset_name": "dataset2",
-                "file_name": "file2.csv",
-                "target_column": "target",
+                "type": "kaggle",
+                "user": "user2",
+                "dataset": "dataset2",
+                "file": "file2.csv",
+                "target": "target",
             },
         ]
 
@@ -225,22 +225,22 @@ class TestDatasetFactory:
     def init_mixed(self):
         params_list = [
             {
-                "dataset_type": "kaggle",
-                "username": "user1",
+                "type": "kaggle",
+                "user": "user1",
                 "dataset": "dataset1",
                 "file": "file1.csv",
                 "target": "target",
             },
             {
-                "dataset_type": "local",
-                "file_path": "local_dataset.csv",
+                "type": "kaggle",
+                "user": "user2",
+                "dataset": "dataset2",
+                "file": "file2.csv",
                 "target": "target",
             },
             {
-                "dataset_type": "kaggle",
-                "username": "user2",
-                "dataset": "dataset2",
-                "file": "file2.csv",
+                "type": "local",
+                "file": "local_dataset.csv",
                 "target": "target",
             },
         ]
@@ -249,11 +249,11 @@ class TestDatasetFactory:
         for dataset in datasets:
             assert isinstance(dataset, BaseDataset)
 
-    def test_invalid_dataset_type(self):
+    def test_invalid_type(self):
         with pytest.raises(ValueError):
             params_list = [
                 {
-                    "dataset_type": "invalid",
+                    "type": "invalid",
                     "file": "local_dataset.csv",
                     "target": "target",
                 },
@@ -263,12 +263,12 @@ class TestDatasetFactory:
             for dataset in datasets:
                 pass
 
-    def test_invalid_dataset_type_type(self):
+    def test_invalid_type_type(self):
         with pytest.raises(ValueError):
             params_list = [
                 {
-                    "dataset_type": 123,
-                    "file_path": "local_dataset.csv",
+                    "type": 123,
+                    "file": "local_dataset.csv",
                     "target": "target",
                 },
             ]
