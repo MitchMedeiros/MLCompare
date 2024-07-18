@@ -472,166 +472,154 @@ class TestDatasetFactory:
     test_path = Path("local_dataset.csv")
     test_path_string = "local_dataset.csv"
     create_csv_file(test_path)
+    local_params_list = [
+        {
+            "type": "local",
+            "path": "local_dataset.csv",
+            "target": "target",
+        }
+    ]
+    kaggle_params_list = [
+        {
+            "type": "kaggle",
+            "user": "user1",
+            "dataset": "dataset1",
+            "file": "file1.csv",
+            "target": "target",
+        },
+        {
+            "type": "kaggle",
+            "user": "user2",
+            "dataset": "dataset2",
+            "file": "file2.csv",
+            "target": "target",
+        },
+    ]
+    hugging_face_params_list = [
+        {
+            "type": "huggingface",
+            "repo": "repo1",
+            "file": "file1.csv",
+            "target": "target",
+        },
+        {
+            "type": "huggingface",
+            "repo": "repo2",
+            "file": "file2.csv",
+            "target": "target",
+        },
+    ]
+    openml_params_list = [
+        {
+            "type": "openml",
+            "id": 31,
+            "target": "target",
+        },
+        {
+            "type": "openml",
+            "id": 2,
+            "target": "target",
+        },
+    ]
+    mixed_params_list = [
+        {
+            "type": "kaggle",
+            "user": "user1",
+            "dataset": "dataset1",
+            "file": "file1.csv",
+            "target": "target",
+        },
+        {
+            "type": "kaggle",
+            "user": "user2",
+            "dataset": "dataset2",
+            "file": "file2.csv",
+            "target": "target",
+        },
+        {
+            "type": "local",
+            "path": "local_dataset.csv",
+            "target": "target",
+        },
+        {
+            "type": "huggingface",
+            "repo": "repo1",
+            "file": "file1.csv",
+            "target": "target",
+        },
+        {
+            "type": "huggingface",
+            "repo": "repo2",
+            "file": "file2.csv",
+            "target": "target",
+        },
+        {
+            "type": "openml",
+            "id": 31,
+            "target": "target",
+        },
+        {
+            "type": "openml",
+            "id": 2,
+            "target": "target",
+        },
+    ]
 
     def test_init_local_dataset(self):
-        params_list = [
-            {
-                "type": "local",
-                "path": "local_dataset.csv",
-                "target": "target",
-            }
-        ]
-        DatasetFactory(params_list)
+        DatasetFactory(self.local_params_list)
 
     def test_create_local_dataset_directly(self):
-        params_list = [
-            {
-                "type": "local",
-                "path": "local_dataset.csv",
-                "target": "target",
-            }
-        ]
-        dataset = DatasetFactory(params_list)
-        local_dataset = dataset.create(**params_list[0])
-
+        dataset = DatasetFactory(self.local_params_list)
+        local_dataset = dataset.create(**self.local_params_list[0])
         assert isinstance(local_dataset, LocalDataset)
 
     def test_iter_local_datasets(self):
-        params_list = [
-            {
-                "type": "local",
-                "path": "local_dataset.csv",
-                "target": "target",
-            },
-        ]
         dataset_count = 0
-        factory = DatasetFactory(params_list)
+        factory = DatasetFactory(self.local_params_list)
 
         for dataset in factory:
             dataset_count += 1
             assert isinstance(dataset, LocalDataset)
-        assert dataset_count == len(params_list)
+        assert dataset_count == len(self.local_params_list)
 
     def test_iter_kaggle_datasets(self):
-        params_list = [
-            {
-                "type": "kaggle",
-                "user": "user1",
-                "dataset": "dataset1",
-                "file": "file1.csv",
-                "target": "target",
-            },
-            {
-                "type": "kaggle",
-                "user": "user2",
-                "dataset": "dataset2",
-                "file": "file2.csv",
-                "target": "target",
-            },
-        ]
         dataset_count = 0
-        factory = DatasetFactory(params_list)
+        factory = DatasetFactory(self.kaggle_params_list)
 
         for dataset in factory:
             dataset_count += 1
             assert isinstance(dataset, KaggleDataset)
-        assert dataset_count == len(params_list)
+        assert dataset_count == len(self.kaggle_params_list)
 
     def test_iter_huggingface_datasets(self):
-        params_list = [
-            {
-                "type": "huggingface",
-                "repo": "repo1",
-                "file": "file1.csv",
-                "target": "target",
-            },
-            {
-                "type": "huggingface",
-                "repo": "repo2",
-                "file": "file2.csv",
-                "target": "target",
-            },
-        ]
         dataset_count = 0
-        factory = DatasetFactory(params_list)
+        factory = DatasetFactory(self.hugging_face_params_list)
 
         for dataset in factory:
             dataset_count += 1
             assert isinstance(dataset, HuggingFaceDataset)
-        assert dataset_count == len(params_list)
+        assert dataset_count == len(self.hugging_face_params_list)
 
     def test_iter_openml_datasets(self):
-        params_list = [
-            {
-                "type": "openml",
-                "id": 31,
-                "target": "target",
-            },
-            {
-                "type": "openml",
-                "id": 2,
-                "target": "target",
-            },
-        ]
         dataset_count = 0
-        factory = DatasetFactory(params_list)
+        factory = DatasetFactory(self.openml_params_list)
 
         for dataset in factory:
             dataset_count += 1
             assert isinstance(dataset, OpenMLDataset)
-        assert dataset_count == len(params_list)
+        assert dataset_count == len(self.openml_params_list)
 
     def test_iter_mixed_datasets(self):
-        params_list = [
-            {
-                "type": "kaggle",
-                "user": "user1",
-                "dataset": "dataset1",
-                "file": "file1.csv",
-                "target": "target",
-            },
-            {
-                "type": "kaggle",
-                "user": "user2",
-                "dataset": "dataset2",
-                "file": "file2.csv",
-                "target": "target",
-            },
-            {
-                "type": "local",
-                "path": "local_dataset.csv",
-                "target": "target",
-            },
-            {
-                "type": "huggingface",
-                "repo": "repo1",
-                "file": "file1.csv",
-                "target": "target",
-            },
-            {
-                "type": "huggingface",
-                "repo": "repo2",
-                "file": "file2.csv",
-                "target": "target",
-            },
-            {
-                "type": "openml",
-                "id": 31,
-                "target": "target",
-            },
-            {
-                "type": "openml",
-                "id": 2,
-                "target": "target",
-            },
-        ]
         dataset_count = 0
-        datasets = DatasetFactory(params_list)
+        datasets = DatasetFactory(self.mixed_params_list)
 
         for dataset in datasets:
             dataset_count += 1
-            assert isinstance(dataset, BaseDataset)
-        assert dataset_count == len(params_list)
+            assert isinstance(
+                dataset,
+                (LocalDataset, KaggleDataset, HuggingFaceDataset, OpenMLDataset),
+            )
+        assert dataset_count == len(self.mixed_params_list)
 
     def test_invalid_type(self):
         with pytest.raises(ValueError):
@@ -642,7 +630,6 @@ class TestDatasetFactory:
                     "target": "target",
                 },
             ]
-
             datasets = DatasetFactory(params_list)
             for dataset in datasets:
                 pass
@@ -656,7 +643,6 @@ class TestDatasetFactory:
                     "target": "target",
                 },
             ]
-
             datasets = DatasetFactory(params_list)
             for dataset in datasets:
                 pass

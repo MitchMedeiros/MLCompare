@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "numpy>=1.23.5,<2.0.0", # for tensorflow compatability
+    "numpy>=1.23.5,<2.0.0", # for OpenML & Tensorflow compatability
     "pandas[pyarrow]>=2.0.0",
     "pydantic>=2.0.0",
     "plotly>=4.0.0",
