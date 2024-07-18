@@ -1,5 +1,6 @@
 from __future__ import annotations as _annotations
 
+import inspect
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -7,6 +8,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Generator, Literal, TypeAlias
 
+import pandas as pd
 from pydantic import BaseModel
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -32,34 +34,80 @@ class LibraryModel(ABC, BaseModel):
     name: str
     module: str | None = None
     params: dict | None = None
+    _library: Literal["sklearn", "xgboost", "torch", "tensorflow"]
     _ml_model: Any = None
+    """
+    A base class for models from different machine learning libraries.
 
-    def instantiate_model(
-        self,
-        library_name: Literal[
-            "sklearn",
-            "xgboost",
-            "torch",
-            "tensorflow",
-        ],
-    ) -> None:
+    Attributes:
+    -----------
+        name (str): Class name of the model. Ex: RandomForestRegressor.
+        module (str | None): Module containing the model class if it's not imported at the library level.
+        params (dict | None): Parameters to pass to the model class constructor if any.
+        _ml_model (Any): The model object instantiated from the library, accessed by the `train` and `predict` methods.
+    """
+
+    @abstractmethod
+    def model_post_init(self, Any): ...
+
+    @abstractmethod
+    def train(
+        self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series
+    ) -> None: ...
+
+    @abstractmethod
+    def predict(self, X_test: pd.DataFrame): ...
+
+    def resolve_model_submodule(self) -> Any | None:
+        imported_library = import_module(self._library)
+        library_modules = imported_library.__all__
+
+        for module_name in library_modules:
+            try:
+                module = import_module(f"{imported_library.__name__}.{module_name}")
+                for class_name, obj in inspect.getmembers(module, inspect.isclass):
+                    if class_name == self.name:
+                        logger.info(f"{self.name} found in module: {module_name}.")
+                        return obj
+            except Exception:
+                pass
+        return None
+
+    def instantiate_model(self) -> None:
         if self.module:
-            full_import = f"{library_name}.{self.module}"
+            full_import = f"{self._library}.{self.module}"
         else:
-            full_import = library_name
+            full_import = self._library
 
+        # Import the library/library.module
         try:
             model_module = import_module(full_import)
         except ImportError:
-            logger.error(f"Could not import module {full_import}")
+            logger.error(
+                f"Could not import module {full_import}. Check that you have {self._library} "
+                "installed or that the module name is spelled correctly."
+            )
             raise
 
+        # Get the model class from the module. If it fails and no module was given, try to find the class within submodules.
         try:
             model_class = getattr(model_module, self.name)
         except AttributeError:
-            logger.error(f"Could not find class {self.name} in module {self.module}")
-            raise
+            if self.module:
+                logger.error(
+                    f"Could not find class: {self.name} in module: {self.module}."
+                )
+                raise
+            else:
+                logger.info(f"Searching {self._library} submodules for {self.name}.")
+                model_class = self.resolve_model_submodule()
+                if not model_class:
+                    raise ImportError(
+                        f"Could not find class {self.name} in any {self._library} submodules. Please provide a "
+                        "module for the model within the config i.e. 'module': 'ensemble'."
+                    )
 
+        # Initialize the model with the given parameters
         try:
             if self.params:
                 ml_model = model_class(**self.params)
@@ -73,19 +121,23 @@ class LibraryModel(ABC, BaseModel):
 
         self._ml_model = ml_model
 
-    @abstractmethod
-    def model_post_init(self, Any): ...
-
-    @abstractmethod
-    def train(self, X_train, y_train) -> None: ...
-
-    @abstractmethod
-    def predict(self, X_test): ...
-
 
 class SklearnModel(LibraryModel):
+    """
+    A class used to instantiate and manage a Scikit-learn model.
+
+    Attributes:
+    -----------
+        name (str): Class name of the model. Ex: RandomForestRegressor.
+        module (str | None): Module containing the model class if it's not imported at the library level.
+        params (dict | None): Parameters to pass to the model class constructor if any.
+        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
+    """
+
+    _library = "sklearn"
+
     def model_post_init(self, Any):
-        self.instantiate_model("sklearn")
+        self.instantiate_model()
 
     def train(self, X_train, y_train) -> None:
         self._ml_model.fit(X_train, y_train)
@@ -95,8 +147,21 @@ class SklearnModel(LibraryModel):
 
 
 class XGBoostModel(LibraryModel):
+    """
+    A class used to instantiate and manage an XGBoost model.
+
+    Attributes:
+    -----------
+        name (str): Class name of the model. Ex: XGBRegressor.
+        module (str | None): Module containing the model class if it's not imported at the library level.
+        params (dict | None): Parameters to pass to the model class constructor if any.
+        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
+    """
+
+    _library = "xgboost"
+
     def model_post_init(self, Any):
-        self.instantiate_model("xgboost")
+        self.instantiate_model()
 
     def train(self, X_train, y_train) -> None:
         self._ml_model.fit(X_train, y_train)
@@ -149,9 +214,7 @@ class ModelFactory:
     def __init__(self, params_list: ParamsInput) -> None:
         self.params_list = ParamsReader.read(params_list)
 
-    def __iter__(
-        self,
-    ) -> Generator[MLModelType, None, None]:
+    def __iter__(self) -> Generator[MLModelType, None, None]:
         """
         Makes the class iterable, yielding dataset instances one by one.
 
@@ -180,7 +243,8 @@ class ModelFactory:
         -------
             ValueError: If an unknown dataset type is provided.
         """
-        # library = library.lower()
+        assert isinstance(library, str), "Library must be a string."
+        library = library.lower()  # type: ignore
 
         match library:
             case "sklearn" | "scikit-learn" | "skl":
@@ -197,15 +261,19 @@ class ModelFactory:
                 )
 
 
-def evaluate_prediction(y_test, y_pred) -> dict[str, float]:
+def evaluate_prediction(y_test, y_pred, model_name: str) -> dict[str, Any]:
     r2 = r2_score(y_test, y_pred)
     rmse = mean_squared_error(y_test, y_pred)
-    return {"r2_score": r2, "rmse": rmse}
+    return {
+        "model": model_name,
+        "r2_score": r2,
+        "rmse": rmse,
+    }
 
 
-def append_model_results(results: dict[str, float], save_directory: Path) -> None:
+def append_dict_to_json(results: dict[str, float], save_directory: Path) -> None:
     """
-    Append the results of a model evaluation to a file.
+    Append the results of a model evaluation to a JSON file.
 
     Args:
     -----
@@ -258,10 +326,10 @@ def process_models(
             model.train(X_train, y_train)
             prediction = model.predict(X_test)
 
-            model_results = evaluate_prediction(y_test, prediction)
-            append_model_results(model_results, save_directory)
+            model_results = evaluate_prediction(y_test, prediction, model.name)
+            append_dict_to_json(model_results, save_directory)
         except Exception:
-            logger.error("Failed to process model.")
+            logger.error(f"Failed to process model: {model.name}")
             raise
 
 
