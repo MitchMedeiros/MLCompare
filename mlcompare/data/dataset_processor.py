@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-from ..types import ParamsInput, SplitDataTuple
+from ..params_reader import ParamsInput
 from .datasets import (
     DatasetFactory,
     DatasetType,
@@ -18,7 +18,7 @@ from .datasets import (
     LocalDataset,
     OpenMLDataset,
 )
-from .split_data import SplitData
+from .split_data import SplitData, SplitDataTuple
 
 logger = logging.getLogger(__name__)
 

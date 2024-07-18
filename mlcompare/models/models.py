@@ -12,8 +12,8 @@ import pandas as pd
 from pydantic import BaseModel
 from sklearn.metrics import mean_squared_error, r2_score
 
-from ..params_reader import ParamsReader
-from ..types import ParamsInput, SplitDataTuple
+from ..data.split_data import SplitDataTuple
+from ..params_reader import ParamsInput, ParamsReader
 
 logger = logging.getLogger(__name__)
 

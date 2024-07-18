@@ -6,7 +6,7 @@ from typing import Any
 
 from .data.dataset_processor import process_datasets
 from .models.models import process_models
-from .types import ParamsInput
+from .params_reader import ParamsInput
 
 logger = logging.getLogger(__name__)
 

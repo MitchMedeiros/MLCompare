@@ -3,11 +3,12 @@ from __future__ import annotations as _annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
-
-from .types import ParamsInput
+from typing import Any, TypeAlias
 
 logger = logging.getLogger(__name__)
+
+ParamsInput: TypeAlias = str | Path | list[dict[str, Any]]
+"""User input for pipelines, containing information to load and process datasets or to create ml models."""
 
 
 class ParamsReader:

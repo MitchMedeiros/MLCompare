@@ -11,8 +11,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-from ..types import SplitDataTuple
-from .split_data import SplitData
+from .split_data import SplitData, SplitDataTuple
 
 logger = logging.getLogger(__name__)
 

@@ -3,13 +3,20 @@ from __future__ import annotations as _annotations
 import logging
 import pickle
 from pathlib import Path
+from typing import TypeAlias
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
 
-from ..types import SplitDataTuple
-
 logger = logging.getLogger(__name__)
+
+SplitDataTuple: TypeAlias = tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame | pd.Series,
+    pd.DataFrame | pd.Series,
+]
+"""Data for training and testing."""
 
 
 class SplitData(BaseModel):

@@ -9,8 +9,7 @@ from typing import Generator, Literal, TypeAlias
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from ..params_reader import ParamsReader
-from ..types import ParamsInput
+from ..params_reader import ParamsInput, ParamsReader
 
 logger = logging.getLogger(__name__)
 
