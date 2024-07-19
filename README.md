@@ -81,13 +81,13 @@ MLCompare is a Python library for running comparison pipelines. It supports mult
 
 Install this library with pip: -->
 
-```sh
+```console
     pip install mlcompare
 ```
 
 Note that for MacOS, both XGBoost and LightGBM require `libomp`. It can be installed with <a href="https://brew.sh">Homebrew</a>:
 
-```sh
+```console
     brew install libomp
 ```
 

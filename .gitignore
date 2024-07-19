@@ -9,7 +9,6 @@ __pypackages__/
 *.egg-info/
 dist/
 /build/
-_build/
 
 # IDEs and editors
 .vs/
