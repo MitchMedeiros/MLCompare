@@ -27,10 +27,10 @@ __pycache__/
 
 
 # Test files
-tests.log
+*.log
+*.csv
 testing.py
 testing.ipynb
-local_dataset.csv
 pipeline_results
 tests/data/test.*
 dataset_params.json
