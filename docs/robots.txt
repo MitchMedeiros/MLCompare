@@ -1,0 +1,3 @@
+User-agent: *
+
+Sitemap: http://127.0.0.1:3000/docs/_build/html/sitemap.xml
