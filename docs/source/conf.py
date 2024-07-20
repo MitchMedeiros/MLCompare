@@ -8,8 +8,12 @@
 
 from __future__ import annotations
 
-# import os
+import os
+import sys
+
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.abspath("../mlcompare"))
 
 load_dotenv()
 
@@ -17,16 +21,16 @@ project = "MLCompare"
 copyright = "2024, Mitchell Medeiros"
 author = "Mitchell Medeiros"
 release = "1.0.0"
+github_doc_root = "https://github.com/MitchMedeiros/mlcompare/tree/master/docs/"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "sphinx.ext.napoleon",
     "sphinxawesome_theme.deprecated",
     "sphinx_sitemap",
-    # "dater",
     "sphinx_copybutton",
-    # "sphinx_inline_tabs",
     "sphinx_design",
     "sphinx_docsearch",
     "sphinxext.opengraph",
@@ -34,15 +38,27 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints"
+    # "dater",
+    # "sphinx_inline_tabs",
 ]
 
 needs_sphinx = "7.3"
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    "pydantic": ("https://docs.pydantic.dev/latest", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
+}
+
 source_suffix = ".rst"
 language = "en"
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 nitpicky = True
+
+autodoc_typehints = "description"
 
 # docsearch_app_id = os.getenv("DOCSEARCH_APP_ID")
 # docsearch_api_key = os.getenv("DOCSEARCH_API_KEY")

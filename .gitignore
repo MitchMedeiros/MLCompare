@@ -9,6 +9,7 @@ __pypackages__/
 *.egg-info/
 dist/
 /build/
+docs/build
 _build
 _static
 _templates
