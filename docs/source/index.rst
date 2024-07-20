@@ -8,8 +8,12 @@ Welcome to MLCompare's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   Overview <mlcompare>
+   Data Processing <mlcompare.data>
+   Models <mlcompare.models>
+   Parameters Reader <mlcompare.params_reader>
+   Pipelines <mlcompare.pipelines>
 
 
 Indices and tables

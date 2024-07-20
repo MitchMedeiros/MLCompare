@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -18,9 +19,9 @@ sys.path.insert(0, os.path.abspath("../mlcompare"))
 load_dotenv()
 
 project = "MLCompare"
-copyright = "2024, Mitchell Medeiros"
 author = "Mitchell Medeiros"
 release = "1.0.0"
+copyright = f"{datetime.now().year}, {author}"
 github_doc_root = "https://github.com/MitchMedeiros/mlcompare/tree/master/docs/"
 
 # -- General configuration ---------------------------------------------------
@@ -54,9 +55,12 @@ intersphinx_mapping = {
 
 source_suffix = ".rst"
 language = "en"
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 nitpicky = True
+
+default_role = "literal"
 
 autodoc_typehints = "description"
 
