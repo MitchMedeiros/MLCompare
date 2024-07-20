@@ -5,16 +5,18 @@ venv/
 .venv/
 __pypackages__/
 
-# Package distribution and build files
+# Package files
 *.egg-info/
 dist/
-/build/
-docs/build
-_build
-_static
-_templates
+build/
 
-# IDEs and editors
+# Doc files
+docs/build
+docs/source/_static
+docs/source/_templates
+docs/source/*/generated
+
+# IDEs
 .vs/
 .vscode/
 .idea/

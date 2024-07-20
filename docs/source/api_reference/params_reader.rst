@@ -1,4 +1,4 @@
-mlcompare.params\_reader module
+ParamsReader
 ===============================
 
 .. automodule:: mlcompare.params_reader

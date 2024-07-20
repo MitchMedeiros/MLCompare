@@ -1,4 +1,4 @@
-mlcompare.pipelines module
+Pipelines
 ==========================
 
 .. automodule:: mlcompare.pipelines

@@ -54,6 +54,7 @@ dev = [
 docs = [
     "python-dotenv==1.0.1",
     "sphinx==7.3.7",
+    "pydata-sphinx-theme==0.15.4",
     "sphinxawesome-theme==5.2.0",
     "sphinx-sitemap==2.6.0",
     "sphinx-copybutton==0.5.2",

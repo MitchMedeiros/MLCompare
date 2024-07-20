@@ -29,13 +29,14 @@ github_doc_root = "https://github.com/MitchMedeiros/mlcompare/tree/master/docs/"
 
 extensions = [
     "sphinx.ext.napoleon",
-    "sphinxawesome_theme.deprecated",
+    # "sphinxawesome_theme.deprecated",
     "sphinx_sitemap",
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_docsearch",
     "sphinxext.opengraph",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "sphinx.ext.viewcode",
@@ -60,7 +61,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 nitpicky = True
 
-default_role = "literal"
+# default_role = "literal"
 
 autodoc_typehints = "description"
 
@@ -79,11 +80,11 @@ autodoc_typehints = "description"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_title = project
-html_theme = "sphinxawesome_theme"
+html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_baseurl = "http://127.0.0.1:3000/docs/_build/html/index.html"
 html_extra_path = ["robots.txt"]
-html_title = "MLCompare Docs"
+html_title = "MLCompare"
 
 # html_theme_options = {}
 

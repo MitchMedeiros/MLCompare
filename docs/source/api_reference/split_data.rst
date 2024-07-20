@@ -1,4 +1,4 @@
-mlcompare.data.split\_data module
+SplitData
 =================================
 
 .. automodule:: mlcompare.data.split_data
