@@ -9,16 +9,16 @@ Classes
 
 .. autosummary::
    :toctree: generated/
-   :template: class.rst
-   :titlesonly:
+   :template: custom_class.rst
 
    data_processor.DataProcessor
    dataset_processor.DatasetProcessor
+   split_data.SplitData
 
 DataProcessor
 ============
 
-.. autoclass:: mlcompare.data.data_processor.DataProcessor
+.. autoclass:: mlcompare.DataProcessor
    :members:
    :undoc-members:
    :show-inheritance:
@@ -26,8 +26,16 @@ DataProcessor
 DatasetProcessor
 =============
 
-.. autoclass:: mlcompare.data.dataset_processor.DatasetProcessor
+.. autoclass:: mlcompare.DatasetProcessor
    :members:
    :undoc-members:
    :show-inheritance:
 
+SplitData
+=============
+
+.. autoclass:: mlcompare.SplitData
+   :members:
+   :undoc-members:
+   :show-inheritance:
+"""

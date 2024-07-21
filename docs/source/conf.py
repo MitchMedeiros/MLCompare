@@ -28,7 +28,6 @@ github_doc_root = "https://github.com/MitchMedeiros/mlcompare/tree/master/docs/"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.napoleon",
     # "sphinxawesome_theme.deprecated",
     "sphinx_sitemap",
     "sphinx_copybutton",
@@ -37,9 +36,10 @@ extensions = [
     "sphinxext.opengraph",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
-    "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints"
     # "dater",
     # "sphinx_inline_tabs",

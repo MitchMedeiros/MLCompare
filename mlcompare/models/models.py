@@ -48,15 +48,16 @@ class LibraryModel(ABC, BaseModel):
     """
 
     @abstractmethod
-    def model_post_init(self, Any): ...
+    def model_post_init(self, Any):
+        ...
 
     @abstractmethod
-    def train(
-        self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series
-    ) -> None: ...
+    def train(self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series) -> None:
+        ...
 
     @abstractmethod
-    def predict(self, X_test: pd.DataFrame): ...
+    def predict(self, X_test: pd.DataFrame):
+        ...
 
     def resolve_model_submodule(self) -> Any | None:
         imported_library = import_module(self._library)
@@ -191,7 +192,8 @@ MLModelType: TypeAlias = SklearnModel | XGBoostModel
 
 class ModelFactory:
     """
-    Creates Model objects such as SklearnModel, XGBoostModel, etc. from a list of dictionaries.
+    Takes in a list of dictionaries and constructs model classes based on the `library` keyword provided for each.
+    The class is designed to be iterated over.
 
     Attributes:
     -----------
@@ -271,7 +273,7 @@ def evaluate_prediction(y_test, y_pred, model_name: str) -> dict[str, Any]:
     }
 
 
-def append_dict_to_json(results: dict[str, float], save_directory: Path) -> None:
+def append_json(results: dict[str, float], save_directory: Path) -> None:
     """
     Append the results of a model evaluation to a JSON file.
 
@@ -327,7 +329,7 @@ def process_models(
             prediction = model.predict(X_test)
 
             model_results = evaluate_prediction(y_test, prediction, model.name)
-            append_dict_to_json(model_results, save_directory)
+            append_json(model_results, save_directory)
         except Exception:
             logger.error(f"Failed to process model: {model.name}")
             raise

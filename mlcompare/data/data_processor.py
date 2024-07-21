@@ -213,7 +213,8 @@ class DataProcessor:
             logger.exception(f"Could not save dataset to {file_path}.")
 
     def split_data(self, target_column: str, test_size: float = 0.2) -> SplitDataTuple:
-        """Split the data into its features and target.
+        """
+        Split the data into its features and target.
 
         Args:
             target_column (str): The column(s) to be used as the target variable(s).
@@ -253,6 +254,10 @@ class DataProcessor:
             save_path (Path): The path to save the SplitData object to.
             target_column (str): The column(s) to be used as the target variable(s) or label(s).
             test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+
+        Raises:
+            ValueError: If no valid save path was provided.
+
         """
         X_train, X_test, y_train, y_test = self.split_data(
             target_column=target_column, test_size=test_size

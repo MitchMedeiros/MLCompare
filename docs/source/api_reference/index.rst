@@ -9,6 +9,5 @@ Welcome to the API Reference
    params_reader
    datasets
    data_processing
-   split_data
    models
    pipelines
