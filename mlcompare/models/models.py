@@ -132,7 +132,6 @@ class SklearnModel(LibraryModel):
         name (str): Class name of the model. Ex: RandomForestRegressor.
         module (str | None): Module containing the model class if it's not imported at the library level.
         params (dict | None): Parameters to pass to the model class constructor if any.
-        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
     """
 
     _library = "sklearn"
@@ -156,7 +155,6 @@ class XGBoostModel(LibraryModel):
         name (str): Class name of the model. Ex: XGBRegressor.
         module (str | None): Module containing the model class if it's not imported at the library level.
         params (dict | None): Parameters to pass to the model class constructor if any.
-        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
     """
 
     _library = "xgboost"
@@ -171,23 +169,54 @@ class XGBoostModel(LibraryModel):
         return self._ml_model.predict(X_test)
 
 
-# class PytorchModel(LibraryModel):
-#     def train(self, X_train, y_train):
-#         self.model.fit(X_train, y_train)
+class PyTorchModel(LibraryModel):
+    """
+    A class used to instantiate and manage a PyTorch model.
 
-#     def predict(self, X_test):
-#         return self.model.predict(X_test)
+    Attributes:
+    -----------
+        name (str): Class name of the model. Ex: LSTM.
+        module (str | None): Module containing the model class if it's not imported at the library level.
+        params (dict | None): Parameters to pass to the model class constructor if any.
+    """
+
+    _library = "torch"
+
+    def model_post_init(self, Any):
+        self.instantiate_model()
+
+    def train(self, X_train, y_train):
+        self._ml_model.fit(X_train, y_train)
+
+    def predict(self, X_test):
+        return self._ml_model.predict(X_test)
 
 
 # class TensorflowModel(LibraryModel):
+#     """
+#     A class used to instantiate and manage an TensorFlow model.
+
+#     Attributes:
+#     -----------
+#         name (str): Class name of the model. Ex: XGBRegressor.
+#         module (str | None): Module containing the model class if it's not imported at the library level.
+#         params (dict | None): Parameters to pass to the model class constructor if any.
+#         _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
+#     """
+
+#     _library = "tensorflow"
+
+#     def model_post_init(self, Any):
+#         self.instantiate_model()
+
 #     def train(self, X_train, y_train):
-#         self.model.fit(X_train, y_train)
+#         self._ml_model.fit(X_train, y_train)
 
 #     def predict(self, X_test):
-#         return self.model.predict(X_test)
+#         return self._ml_model.predict(X_test)
 
 
-MLModelType: TypeAlias = SklearnModel | XGBoostModel
+MLModelType: TypeAlias = SklearnModel | XGBoostModel | PyTorchModel
 
 
 class ModelFactory:
@@ -253,6 +282,8 @@ class ModelFactory:
                 return SklearnModel(**kwargs)
             case "xgboost" | "xgb":
                 return XGBoostModel(**kwargs)
+            case "pytorch" | "torch":
+                return PyTorchModel(**kwargs)
             case _:
                 raise ValueError(
                     f"Library: {library} is not supported. Valid library names "
