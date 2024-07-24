@@ -181,6 +181,10 @@ class PyTorchModel(LibraryModel):
     """
 
     _library = "torch"
+    activation: str
+    loss: str
+    optimizer: str = "Adam"
+    epochs: int = 100
 
     def model_post_init(self, Any):
         self.instantiate_model()
@@ -192,28 +196,32 @@ class PyTorchModel(LibraryModel):
         return self._ml_model.predict(X_test)
 
 
-# class TensorflowModel(LibraryModel):
-#     """
-#     A class used to instantiate and manage an TensorFlow model.
+class TensorflowModel(LibraryModel):
+    """
+    A class used to instantiate and manage an TensorFlow model.
 
-#     Attributes:
-#     -----------
-#         name (str): Class name of the model. Ex: XGBRegressor.
-#         module (str | None): Module containing the model class if it's not imported at the library level.
-#         params (dict | None): Parameters to pass to the model class constructor if any.
-#         _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
-#     """
+    Attributes:
+    -----------
+        name (str): Class name of the model. Ex: XGBRegressor.
+        module (str | None): Module containing the model class if it's not imported at the library level.
+        params (dict | None): Parameters to pass to the model class constructor if any.
+        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
+    """
 
-#     _library = "tensorflow"
+    _library = "tensorflow"
+    activation: str
+    loss: str
+    optimizer: str = "Adam"
+    epochs: int = 100
 
-#     def model_post_init(self, Any):
-#         self.instantiate_model()
+    def model_post_init(self, Any):
+        self.instantiate_model()
 
-#     def train(self, X_train, y_train):
-#         self._ml_model.fit(X_train, y_train)
+    def train(self, X_train, y_train):
+        self._ml_model.fit(X_train, y_train)
 
-#     def predict(self, X_test):
-#         return self._ml_model.predict(X_test)
+    def predict(self, X_test):
+        return self._ml_model.predict(X_test)
 
 
 MLModelType: TypeAlias = SklearnModel | XGBoostModel | PyTorchModel
@@ -294,17 +302,20 @@ class ModelFactory:
                 )
 
 
-def evaluate_prediction(y_test, y_pred, model_name: str) -> dict[str, Any]:
+def evaluate_prediction(
+    y_test, y_pred, model_name: str, data_split: Literal["train", "test"] = "test"
+) -> dict[str, Any]:
     r2 = r2_score(y_test, y_pred)
     rmse = mean_squared_error(y_test, y_pred)
     return {
         "model": model_name,
+        "data_split": data_split,
         "r2_score": r2,
         "rmse": rmse,
     }
 
 
-def append_json(results: dict[str, float], save_directory: Path) -> None:
+def append_json(results: dict[str, float]) -> None:
     """
     Append the results of a model evaluation to a JSON file.
 
@@ -313,7 +324,7 @@ def append_json(results: dict[str, float], save_directory: Path) -> None:
         results (dict[str, float]): The results of the model evaluation.
         save_directory (Path): The directory to save the results to.
     """
-    file_path = save_directory / "model_results.json"
+    file_path = Path(__file__) / "model_results.json"
 
     try:
         with open(file_path, "r") as file:
@@ -360,7 +371,7 @@ def process_models(
             prediction = model.predict(X_test)
 
             model_results = evaluate_prediction(y_test, prediction, model.name)
-            append_json(model_results, save_directory)
+            append_json(model_results)
         except Exception:
             logger.error(f"Failed to process model: {model.name}")
             raise
