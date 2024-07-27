@@ -34,7 +34,7 @@
 
 <hr>
 
-MLCompare is a Python library for running comparison pipelines, focused on being straight-forward and flexible. It supports multiple popular ML libraries, can perform dataset retrieval, processing, and results visualization. It also support providing your own models and model pipelines.
+MLCompare is a Python library for running comparison pipelines that is focused on being both straight-forward and flexible. It supports multiple popular ML libraries, retrieval from multiple online dataset repositories, data processing, and model results visualization. It also allows for using your own models and datasets.
 
 <table align="center">
     <tr>
