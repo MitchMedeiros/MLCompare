@@ -37,40 +37,6 @@ jobs:
       run: |
         brew install libomp
 
-    - name: Ensure pip cache directory exists
+    - name: Display pip cache directory
       run: |
-        mkdir -p ~/.cache/pip
-
-    - name: Cache pip
-      id: cache-pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
-
-    - name: Verify Cache Hit
-      run: |
-        if [ -d ~/.cache/pip ]; then echo "Cache hit"; else echo "Cache miss"; fi
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .[dev]
-
-    - name: Print pip cache directory
-      run: |
-        echo "pip cache directory contents:"
-        ls -al ~/.cache/pip
-
-    - name: Save pip cache
-      if: steps.cache-pip.outputs.cache-hit != 'true'
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
-
-    - name: Run tests
-      run: |
-        pytest tests/models/test_models.py
+        python -m pip cache dir
