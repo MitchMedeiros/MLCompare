@@ -37,6 +37,27 @@ jobs:
       run: |
         brew install libomp
 
-    - name: Display pip cache directory
+    - name: Cache pip
+      id: cache-pip
+      uses: actions/cache@v3
+      with:
+        path: /Users/runner/Library/Caches/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+    - name: Install dependencies
       run: |
-        python -m pip cache dir
+        python -m pip install --upgrade pip
+        pip install .[dev]
+
+    - name: Save pip cache
+      if: steps.cache-pip.outputs.cache-hit != 'true'
+      uses: actions/cache@v3
+      with:
+        path: /Users/runner/Library/Caches/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+
+    - name: Run tests
+      run: |
+        pytest tests/models/test_models.py
