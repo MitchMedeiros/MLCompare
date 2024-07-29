@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from mlcompare.params_reader import ParamsReader
+from mlcompare.params_reader import ParamsReader  # test
 
 logger = logging.getLogger("mlcompare.params_reader")
 
