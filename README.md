@@ -2,7 +2,7 @@
     <img src="https://d1nheu3uhuz51e.cloudfront.net/mlcompare/logo_text_1k.png" width="425" alt="MLCompare Logo">
 </p>
 
-<hr>
+<!-- <hr> -->
 
 <div align="center">
 <a href="https://pypi.org/project/mlcompare">
@@ -32,6 +32,8 @@
 <a href="https://app.codecov.io/gh/MitchMedeiros/MLCompare">
     <img alt="Code coverage" src="https://codecov.io/gh/MitchMedeiros/MLCompare/branch/main/graph/badge.svg">
 </a> -->
+
+<br>
 
 MLCompare is a Python package for running model comparison pipelines that is focused on being both simple to use and flexible. It supports multiple popular ML libraries, retrieval from multiple online dataset repositories, common data processing steps, and model results visualization. Additionally, it also allows for using your own models and datasets within the pipelines.
 
