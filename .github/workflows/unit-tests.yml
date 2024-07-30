@@ -41,8 +41,7 @@ jobs:
 
     - name: Install libomp on macOS
       if: runner.os == 'macOS'
-      run: |
-        brew install libomp
+      run: brew install libomp
 
     - name: Install dependencies
       run: |
@@ -50,5 +49,5 @@ jobs:
         pip install .[dev]
 
     - name: Run tests
-      run: |
-        pytest tests/models/test_models.py
+      working-directory: ./tests
+      run: pytest

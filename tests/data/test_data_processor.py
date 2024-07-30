@@ -7,7 +7,7 @@ from kaggle.rest import ApiException
 
 from mlc import DataProcessor
 
-data_processor_logger = logging.getLogger("mlcompare.data.data_processor")
+data_processor_logger = logging.getLogger("mlc.data.data_processor")
 
 
 class TestDataProcessor(unittest.TestCase):
@@ -15,13 +15,9 @@ class TestDataProcessor(unittest.TestCase):
     two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
 
     def test_init_with_dataframe(self):
-        # Create a DataFrame for testing
         data = pd.DataFrame(self.two_column_data)
 
-        # Initialize DataProcessor with the DataFrame
         processor = DataProcessor(data=data)
-
-        # Check if the data attribute is set correctly
         self.assertTrue(processor.data.equals(data))
 
     def test_init_with_path_csv(self):
@@ -30,62 +26,42 @@ class TestDataProcessor(unittest.TestCase):
         data = pd.DataFrame(self.two_column_data)
         data.to_csv(csv_path, index=False)
 
-        # Initialize DataProcessor with the CSV file path
         processor = DataProcessor(data=csv_path)
-
-        # Check if the data attribute is set correctly
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary CSV file
         csv_path.unlink()
 
     def test_init_with_path_parquet(self):
-        # Create a temporary pickle file for testing
         parquet_path = self.current_dir / "test.parquet"
         data = pd.DataFrame(self.two_column_data)
         data.to_parquet(parquet_path)
 
-        # Initialize DataProcessor with the pickle file path
         processor = DataProcessor(data=parquet_path)
-
-        # Check if the data attribute is set correctly
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary pickle file
         parquet_path.unlink()
 
     def test_init_with_path_pkl(self):
-        # Create a temporary pickle file for testing
         pkl_path = self.current_dir / "test.pkl"
         data = pd.DataFrame(self.two_column_data)
         data.to_pickle(pkl_path)
 
-        # Initialize DataProcessor with the pickle file path
         processor = DataProcessor(data=pkl_path)
-
-        # Check if the data attribute is set correctly
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary pickle file
         pkl_path.unlink()
 
     def test_init_with_path_json(self):
-        # Create a temporary JSON file for testing
         json_path = self.current_dir / "test.json"
         data = pd.DataFrame(self.two_column_data)
         data.to_json(json_path, orient="records")
 
-        # Initialize DataProcessor with the JSON file path
         processor = DataProcessor(data=json_path)
-
-        # Check if the data attribute is set correctly
         self.assertTrue(processor.data.equals(data))
 
-        # Clean up the temporary JSON file
         json_path.unlink()
 
     def test_init_with_unsupported_file_type(self):
-        # Create a temporary JSON file for testing
         html_path = self.current_dir / "test.html"
         data = pd.DataFrame(self.two_column_data)
         data.to_html(html_path)
@@ -93,18 +69,13 @@ class TestDataProcessor(unittest.TestCase):
         with self.assertRaises(Exception):
             DataProcessor(data=html_path)
 
-        # Clean up the temporary JSON file
         html_path.unlink()
 
     def test_init_with_no_data(self):
-        # Initialize DataProcessor with no data
         processor = DataProcessor()
-
-        # Check if the data attribute is an empty DataFrame
         self.assertTrue(processor.data.empty)
 
     def test_init_with_invalid_data(self):
-        # Initialize DataProcessor with an invalid data type
         with self.assertRaises(Exception):
             DataProcessor(data=123)
 
@@ -131,7 +102,6 @@ class TestDataProcessor(unittest.TestCase):
             processor.download_kaggle_data(owner, dataset_name, file_name)
 
     def test_drop_columns(self):
-        # Test dropping columns from the DataFrame
         data = pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
         processor = DataProcessor(data=data)
         processed_data = processor.drop_columns(["A", "C"])
@@ -141,7 +111,6 @@ class TestDataProcessor(unittest.TestCase):
         self.assertTrue("B" in processed_data.columns)
 
     def test_encode_columns(self):
-        # Test encoding categorical columns
         data = pd.DataFrame({"Category": ["A", "B", "A"], "Value": [1, 2, 3]})
         processor = DataProcessor(data=data)
         processed_data = processor.encode_columns(["Category"])
@@ -153,7 +122,6 @@ class TestDataProcessor(unittest.TestCase):
         self.assertEqual(processed_data["Category_B"].sum(), 1)
 
     def test_split_data(self):
-        # Test splitting data into training and testing sets
         data = pd.DataFrame({"Feature": [1, 2, 3, 4], "Target": [5, 6, 7, 8]})
         processor = DataProcessor(data=data)
         X_train, X_test, y_train, y_test = processor.split_data("Target")
@@ -165,7 +133,6 @@ class TestDataProcessor(unittest.TestCase):
         self.assertTrue(isinstance(y_test, pd.Series))
 
     def test_save_data_csv(self):
-        # Test saving data to a CSV file
         save_path = self.current_dir / "test.csv"
         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
         processor = DataProcessor(data=data)
@@ -176,7 +143,6 @@ class TestDataProcessor(unittest.TestCase):
         save_path.unlink()
 
     def test_save_data_pickle(self):
-        # Test saving data to a pickle file
         save_path = self.current_dir / "test.pkl"
         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
         processor = DataProcessor(data=data)
@@ -219,21 +185,18 @@ class TestDataProcessor(unittest.TestCase):
 
         save_path.unlink()
 
-    # Returns False when no missing values are present
     def test_missing_values_no_missing_values(self):
         data = {"A": [1, 2, 3], "B": ["value", "value", "value"]}
         processor = DataProcessor(data=data)
         result = processor.has_missing_values()
         self.assertFalse(result)
 
-    # DataFrame is empty and should return False
     def test_missing_values_empty_dataframe(self):
         data = pd.DataFrame()
         processor = DataProcessor(data=data)
         result = processor.has_missing_values()
         self.assertFalse(result)
 
-    # Detects NaN values in DataFrame and returns True
     def test_missing_values_none_value(self):
         data = {"A": [1, 2, None], "B": ["value", "value", "value"]}
         processor = DataProcessor(data=data)
@@ -241,7 +204,6 @@ class TestDataProcessor(unittest.TestCase):
             result = processor.has_missing_values()
             self.assertTrue(result)
 
-    # Detects empty strings in DataFrame and returns True
     def test_missing_values_empty_strings(self):
         data = {"A": [1, 2, 3], "B": ["", "value", "value"]}
         processor = DataProcessor(data=data)
@@ -249,7 +211,6 @@ class TestDataProcessor(unittest.TestCase):
             result = processor.has_missing_values()
             self.assertTrue(result)
 
-    # Detects "." values in DataFrame and returns True
     def test_missing_values_dot_values(self):
         data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
         processor = DataProcessor(data=data)
@@ -257,7 +218,6 @@ class TestDataProcessor(unittest.TestCase):
             result = processor.has_missing_values()
             self.assertTrue(result)
 
-    # DataFrame contains mixed data types
     def test_multiple_missing_value_types(self):
         data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
         processor = DataProcessor(data=data)
@@ -265,7 +225,6 @@ class TestDataProcessor(unittest.TestCase):
             result = processor.has_missing_values()
             self.assertTrue(result)
 
-    # Logs a warning message when missing values are found
     def test_logs_warning_message(self):
         data = {"A": [1, 2, None], "B": ["", "value", "."]}
         processor = DataProcessor(data=data)
