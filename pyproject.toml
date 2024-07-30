@@ -3,7 +3,7 @@ requires = ['hatchling', 'hatch-fancy-pypi-readme>=22.5.0']
 build-backend = "hatchling.build"
 
 [project]
-name = "mlcompare"
+name = "mlc"
 version = "1.0.0"
 requires-python = ">=3.10"
 description = "Quickly compare machine learning models across libraries and datasets."
@@ -39,12 +39,10 @@ dependencies = [
     "xgboost>=2.1.0",
     "lightgbm>=4.0.0",
     "torch>=2.0.0",
+    # "tensorflow>=2.0.0",
 ]
 
 [project.optional-dependencies]
-models = [
-    # "tensorflow>=2.0.0",
-]
 dev = [
     "pytest>=8.0.0",
     "black>=24.0.0",
@@ -65,10 +63,10 @@ docs = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/MitchMedeiros/ml-compare"
+"Homepage" = "https://github.com/MitchMedeiros/mlcompare"
 
 [tool.hatch.build.targets.wheel]
-packages = ["mlcompare"]
+packages = ["mlc"]
 
 [tool.pytest.ini_options]
 testpaths = "tests"

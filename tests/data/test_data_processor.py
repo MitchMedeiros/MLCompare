@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from kaggle.rest import ApiException
 
-from mlcompare import DataProcessor
+from mlc import DataProcessor
 
 data_processor_logger = logging.getLogger("mlcompare.data.data_processor")
 

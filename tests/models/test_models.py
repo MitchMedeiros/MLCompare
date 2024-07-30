@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBRegressor
 
-from mlcompare.models.models import (
+from mlc.models.models import (
     LibraryModel,
     ModelFactory,
     SklearnModel,
