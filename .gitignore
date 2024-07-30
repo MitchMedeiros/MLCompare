@@ -32,14 +32,11 @@ __pycache__/
 
 
 # Test files
-*.log
-*.csv
+tests.log
 testing.py
 testing.ipynb
 pipeline_results
 tests/data/test.*
-dataset_params.json
-invalid_dataset_params.json
 
 # Other
 .DS_Store
