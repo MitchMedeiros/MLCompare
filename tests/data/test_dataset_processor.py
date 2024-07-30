@@ -5,7 +5,7 @@
 # import pandas as pd
 # from kaggle.rest import ApiException
 
-# from mlc import DatasetProcessor
+# from mlcompare import DatasetProcessor
 
 # logger = logging.getLogger("mlcompare.data.dataset_processor")
 

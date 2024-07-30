@@ -89,7 +89,7 @@ MLCompare is a Python package for running model comparison pipelines, with the a
 Install this library with pip: -->
 
 ```console
-    pip install mlc
+    pip install mlcompare
 ```
 
 Note that for MacOS, both XGBoost and LightGBM require `libomp`. It can be installed with <a href="https://brew.sh">Homebrew</a>:
@@ -105,7 +105,7 @@ Running a pipeline with multiple models and datasets is done by making list of d
 The below example downloads a dataset from OpenML and Kaggle, one-hot encodes some of the columns in the Kaggle dataset, and trains and evaluates a Random Forest and XGBoost model on them.
 
 ```python
-import mlc
+import mlcompare
 
 datasets = [
     {
@@ -135,7 +135,7 @@ models = [
     }
 ]
 
-mlc.full_pipeline(datasets, models)
+mlcompare.full_pipeline(datasets, models)
 ```
 
 In the case of the XGBoost model we passed in our own parameter values rather than using the defaults.

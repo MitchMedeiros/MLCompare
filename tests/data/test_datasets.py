@@ -10,7 +10,7 @@ from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
 from openml.exceptions import OpenMLServerException
 from pydantic import ValidationError
 
-from mlc.data.datasets import (
+from mlcompare.data.datasets import (
     BaseDataset,
     DatasetFactory,
     HuggingFaceDataset,

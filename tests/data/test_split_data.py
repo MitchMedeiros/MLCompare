@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 import pytest
 
-from mlc.data.split_data import SplitData, load_split_data
+from mlcompare.data.split_data import SplitData, load_split_data
 
 logger = logging.getLogger("mlcompare.data.split_data")
 

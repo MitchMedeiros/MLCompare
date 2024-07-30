@@ -15,8 +15,8 @@ __description__ = (
 )
 __docformat__ = "restructuredtext"
 __docs_url__ = ""
-__github_url__ = "https://github.com/MitchMedeiros/ml-compare"
-__github_issues_url__ = "https://github.com/MitchMedeiros/ml-compare/issues"
+__github_url__ = "https://github.com/MitchMedeiros/mlcompare"
+__github_issues_url__ = "https://github.com/MitchMedeiros/mlcompare/issues"
 __doc__ = f"""
 MLCompare is a Python library for running comparison pipelines, focused on being straight-forward and 
 flexible. It supports multiple popular ML libraries, can perform dataset retrieval, processing, and 
