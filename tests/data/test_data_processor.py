@@ -7,7 +7,7 @@ from kaggle.rest import ApiException
 
 from mlcompare import DataProcessor
 
-data_processor_logger = logging.getLogger("mlc.data.data_processor")
+data_processor_logger = logging.getLogger("mlcompare.data.data_processor")
 
 
 class TestDataProcessor(unittest.TestCase):
