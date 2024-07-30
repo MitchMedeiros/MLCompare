@@ -6,11 +6,17 @@ on:
       - main
     paths-ignore:
       - "docs/**"
+      - "README.md"
+      - "HISTORY.md"
+      - ".gitignore"
   pull_request:
     branches:
       - main
     paths-ignore:
       - "docs/**"
+      - "README.md"
+      - "HISTORY.md"
+      - ".gitignore"
 
 permissions:
   contents: read

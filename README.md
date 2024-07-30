@@ -2,8 +2,6 @@
     <img src="https://d1nheu3uhuz51e.cloudfront.net/mlcompare/logo_text_1k.png" width="425" alt="MLCompare Logo">
 </p>
 
-<!-- <hr> -->
-
 <div align="center">
 <a href="https://pypi.org/project/mlcompare">
     <img alt="Supported Python Versions" src="https://img.shields.io/pypi/pyversions/Django?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxLjAxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjU2IDI1NSI%2BPGRlZnM%2BPGxpbmVhckdyYWRpZW50IGlkPSJsb2dvc1B5dGhvbjAiIHgxPSIxMi45NTklIiB4Mj0iNzkuNjM5JSIgeTE9IjEyLjAzOSUiIHkyPSI3OC4yMDElIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMzg3ZWI4Ii8%2BPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMzY2OTk0Ii8%2BPC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImxvZ29zUHl0aG9uMSIgeDE9IjE5LjEyOCUiIHgyPSI5MC43NDIlIiB5MT0iMjAuNTc5JSIgeTI9Ijg4LjQyOSUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmUwNTIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZmMzMzEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI2xvZ29zUHl0aG9uMCkiIGQ9Ik0xMjYuOTE2LjA3MmMtNjQuODMyIDAtNjAuNzg0IDI4LjExNS02MC43ODQgMjguMTE1bC4wNzIgMjkuMTI4aDYxLjg2OHY4Ljc0NUg0MS42MzFTLjE0NSA2MS4zNTUuMTQ1IDEyNi43N2MwIDY1LjQxNyAzNi4yMSA2My4wOTcgMzYuMjEgNjMuMDk3aDIxLjYxdi0zMC4zNTZzLTEuMTY1LTM2LjIxIDM1LjYzMi0zNi4yMWg2MS4zNjJzMzQuNDc1LjU1NyAzNC40NzUtMzMuMzE5VjMzLjk3UzE5NC42Ny4wNzIgMTI2LjkxNi4wNzJNOTIuODAyIDE5LjY2YTExLjEyIDExLjEyIDAgMCAxIDExLjEzIDExLjEzYTExLjEyIDExLjEyIDAgMCAxLTExLjEzIDExLjEzYTExLjEyIDExLjEyIDAgMCAxLTExLjEzLTExLjEzYTExLjEyIDExLjEyIDAgMCAxIDExLjEzLTExLjEzIi8%2BPHBhdGggZmlsbD0idXJsKCNsb2dvc1B5dGhvbjEpIiBkPSJNMTI4Ljc1NyAyNTQuMTI2YzY0LjgzMiAwIDYwLjc4NC0yOC4xMTUgNjAuNzg0LTI4LjExNWwtLjA3Mi0yOS4xMjdIMTI3LjZ2LTguNzQ1aDg2LjQ0MXM0MS40ODYgNC43MDUgNDEuNDg2LTYwLjcxMmMwLTY1LjQxNi0zNi4yMS02My4wOTYtMzYuMjEtNjMuMDk2aC0yMS42MXYzMC4zNTVzMS4xNjUgMzYuMjEtMzUuNjMyIDM2LjIxaC02MS4zNjJzLTM0LjQ3NS0uNTU3LTM0LjQ3NSAzMy4zMnY1Ni4wMTNzLTUuMjM1IDMzLjg5NyA2Mi41MTggMzMuODk3bTM0LjExNC0xOS41ODZhMTEuMTIgMTEuMTIgMCAwIDEtMTEuMTMtMTEuMTNhMTEuMTIgMTEuMTIgMCAwIDEgMTEuMTMtMTEuMTMxYTExLjEyIDExLjEyIDAgMCAxIDExLjEzIDExLjEzYTExLjEyIDExLjEyIDAgMCAxLTExLjEzIDExLjEzIi8%2BPC9zdmc%2B&labelColor=blue&color=yellow">
@@ -35,7 +33,13 @@
 
 <br>
 
-MLCompare is a Python package for running model comparison pipelines that is focused on being both simple to use and flexible. It supports multiple popular ML libraries, retrieval from multiple online dataset repositories, common data processing steps, and model results visualization. Additionally, it also allows for using your own models and datasets within the pipelines.
+<div align="center">
+** This library is still in early developement. Expect many more features to come :D
+</div>
+
+<br>
+
+MLCompare is a Python package for running model comparison pipelines, with the aim of being both simple and flexible. It supports multiple popular ML libraries, retrieval from multiple online dataset repositories, common data processing steps, and results visualization. Additionally, it allows for using your own models and datasets within the pipelines.
 
 <table align="center">
     <tr>
@@ -94,9 +98,11 @@ Note that for MacOS, both XGBoost and LightGBM require `libomp`. It can be insta
     brew install libomp
 ```
 
-<h2>Simple Example</h2>
+<h2>A Simple Example</h2>
 
-Running a pipeline with multiple models and datasets is as simple as defining a list of dictionaries for each and providing them to a pipeline function. The following example downloads a dataset from OpenML and Hugging Face, processes them using the optional arguements, and compares a Random Forest, XGBoost, and LightGBM model on both datasets.
+Running a pipeline with multiple models and datasets is done by making list of dictionaries for each and providing them to a pipeline function.
+
+The below example downloads a dataset from OpenML and Kaggle, one-hot encodes some of the columns in the Kaggle dataset, and trains and evaluates a Random Forest and XGBoost model on them.
 
 ```python
 import mlc
@@ -104,16 +110,16 @@ import mlc
 datasets = [
     {
         "type": "openml",
-        "id": 31,
-        "target": "Revenue",
+        "id": 8,
+        "target": "drinks",
     },
     {
-        "type": "huggingface",
-        "id": "rubend18/ChatGPT-Jailbreak-Prompts",
-        "file": "dataset.csv",
-        "target": "target",
-        "drop": ["Name"],
-        "onehotEncode": ["Location", "Cuisine"],
+        "type": "kaggle",
+        "user": "gorororororo23",
+        "dataset": "plant-growth-data-classification",
+        "file": "plant_growth_data.csv",
+        "target": "Growth_Milestone",
+        "onehotEncode": ["Soil_Type", "Water_Frequency", "Fertilizer_Type"],
     }
 ]
 
@@ -125,10 +131,6 @@ models = [
     {
         "library": "xgboost",
         "name": "XGBRegressor",
-    },
-    {
-        "library": "lightgbm",
-        "name": "LGBMRegressor",
         "params": {"num_leaves": 40, "n_estimators": 200}
     }
 ]
@@ -136,4 +138,4 @@ models = [
 mlc.full_pipeline(datasets, models)
 ```
 
-You can either use each model's default values or choose your own using the params key.
+In the case of the XGBoost model we passed in our own parameter values rather than using the defaults.
