@@ -41,3 +41,4 @@ tests/data/test.*
 # Other
 .DS_Store
 .env
+.pypirc

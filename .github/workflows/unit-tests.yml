@@ -9,6 +9,7 @@ on:
       - "README.md"
       - "HISTORY.md"
       - ".gitignore"
+      - ".readthedocs.yaml"
   pull_request:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - "README.md"
       - "HISTORY.md"
       - ".gitignore"
+      - ".readthedocs.yaml"
 
 permissions:
   contents: read

@@ -1,0 +1,18 @@
+version: 2
+
+formats: [pdf]
+
+build:
+  os: ubuntu-lts-latest
+  tools:
+    python: "3.12"
+
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+
+sphinx:
+  configuration: docs/source/conf.py
