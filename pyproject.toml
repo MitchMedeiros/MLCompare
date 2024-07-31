@@ -4,28 +4,28 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mlcompare"
-version = "1.0.0"
-requires-python = ">=3.10"
 description = "Quickly compare machine learning models across libraries and datasets."
-readme = "README.md"
-license = {file = "LICENSE.txt"}
 authors = [{name = "Mitchell Medeiros"}]
+license = "MIT"
+requires-python = ">=3.10"
+readme = "README.md"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
-    'Intended Audience :: Science/Research',
-    'Topic :: Scientific/Engineering',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: Implementation :: CPython',
-    'Typing :: Typed',
-    'Operating System :: POSIX',
+    "License :: OSI Approved :: MIT License",
     'Operating System :: Unix',
+    'Operating System :: POSIX :: Linux',
     'Operating System :: MacOS',
     'Operating System :: Microsoft :: Windows',
+    'Typing :: Typed',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering',
 ]
 dependencies = [
     "numpy>=1.23.5,<2.0.0", # for OpenML & Tensorflow compatability
@@ -41,6 +41,7 @@ dependencies = [
     "torch>=2.0.0",
     # "tensorflow>=2.0.0",
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
@@ -65,10 +66,17 @@ docs = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/MitchMedeiros/mlcompare"
+Homepage = "https://github.com/MitchMedeiros/mlcompare"
+Documentation = "https://mlcompare.readthedocs.io/en/latest/api_reference"
+Source = "https://github.com/MitchMedeiros/mlcompare"
+Changelog = "https://mlcompare.readthedocs.io/en/latest/release_notes"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mlcompare"]
+
+[tool.hatch.version]
+path = "mlcompare/__init__.py"
+pattern = "^__version__ = ['\"](?P<version>[^'\"]*)['\"]"
 
 [tool.pytest.ini_options]
 testpaths = "tests"

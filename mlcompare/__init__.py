@@ -6,7 +6,7 @@ from .models.models import ModelFactory, process_models
 from .params_reader import ParamsReader
 from .pipelines import data_exploration_pipeline, full_pipeline
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __title__ = "MLCompare"
 __author__ = "Mitchell Medeiros"
 __license__ = "MIT"
@@ -14,9 +14,9 @@ __description__ = (
     "Quickly compare machine learning models from different libraries across datasets."
 )
 __docformat__ = "restructuredtext"
-__docs_url__ = ""
-__github_url__ = "https://github.com/MitchMedeiros/mlcompare"
-__github_issues_url__ = "https://github.com/MitchMedeiros/mlcompare/issues"
+__docs_url__ = "https://mlcompare.readthedocs.io/en/latest/api_reference"
+__github_url__ = "https://github.com/MitchMedeiros/MLCompare"
+__github_issues_url__ = "https://github.com/MitchMedeiros/MLCompare/issues"
 __doc__ = f"""
 MLCompare is a Python library for running comparison pipelines, focused on being straight-forward and 
 flexible. It supports multiple popular ML libraries, can perform dataset retrieval, processing, and 
