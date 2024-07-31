@@ -12,8 +12,8 @@
 <a href="https://pypi.org/project/mlcompare/">
     <img alt="PyPI - License" src="https://img.shields.io/pypi/l/mlcompare?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMTYgMTYiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzk3OTc5NyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBkPSJNNC41IDEzLjVoN004LjAxIDF2MTIuMDZNMS41IDMuNWgzbDEuNS0xaDRsMS41IDFoM00uNSAxMEwzIDQuNDhMNS41IDEwQzQgMTEgMiAxMSAuNSAxMG0xMCAwTDEzIDQuNDhMMTUuNSAxMGMtMS41IDEtMy41IDEtNSAwIi8%2BPC9zdmc%2B&labelColor=darkred&color=lightgrey">
 </a>
-
-<a href="https://mlcompare.readthedocs.io/en/latest/api_reference">
+<br>
+<a href="https://mlcompare.readthedocs.io/en/latest/api_reference" target="_blank">
     <img alt="Read the Docs" src="https://img.shields.io/readthedocs/mlcompare?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIwIDAgNDggNDgiPjxwYXRoIGZpbGw9IiM5MGNhZjkiIGQ9Ik00MCA0NUg4VjNoMjJsMTAgMTB6Ii8%2BPHBhdGggZmlsbD0iI2UxZjVmZSIgZD0iTTM4LjUgMTRIMjlWNC41eiIvPjxwYXRoIGZpbGw9IiMxOTc2ZDIiIGQ9Ik0xNiAyMWgxN3YySDE2em0wIDRoMTN2MkgxNnptMCA0aDE3djJIMTZ6bTAgNGgxM3YySDE2eiIvPjwvc3ZnPg%3D%3D&labelColor=white">
 </a>&nbsp;
 <a href="https://github.com/MitchMedeiros/MLCompare/actions/workflows/lint.yml">
@@ -23,14 +23,14 @@
     <img alt="GitHub Actions status (MacOS Unit Tests)" src="https://img.shields.io/github/actions/workflow/status/MitchMedeiros/MLCompare/unit-tests.yml?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI%2BPHBhdGggZmlsbD0iIzY5Njk2OSIgZD0iTTMxLjUxMiAzMC4zOThoNjEuMzA0YTMuMDA2IDMuMDA2IDAgMCAxIDAgNi4wMTJIMzEuNTEyYTMuMDA3IDMuMDA3IDAgMCAxLTMuMDA0LTMuMDA0YTMuMDEgMy4wMSAwIDAgMSAzLjAwNC0zLjAwOG0wIDAiLz48cGF0aCBmaWxsPSIjMDA5ZmUzIiBkPSJNMzIuMDQ3IDI0LjMySDQ0LjM3djIuODQ0SDMyLjA0N3ptMCAwIi8%2BPHBhdGggZmlsbD0iI2M3ZDMwMiIgZD0iTTQ4LjE2OCAyNC4zMmgxMi4zMjR2Mi44NDRINDguMTY4em0wIDAiLz48cGF0aCBmaWxsPSIjZjA3ZTE2IiBkPSJNNjQuMDcgMjQuMzJoMTIuMzI4djIuODQ0SDY0LjA3em0wIDAiLz48cGF0aCBmaWxsPSIjZGYyODE1IiBkPSJNNzkuOTEgMjQuMzJoMTIuMzI0djIuODQ0SDc5Ljkxem0wIDE1LjIyaDEyLjMyNHYyMC44MzVINzkuOTF6bTAgMCIvPjxwYXRoIGZpbGw9IiNmMDdlMTYiIGQ9Ik02NC4wNyAzOS41NGgxMi4zNTJ2MzMuODQ3SDY0LjA3em0wIDAiLz48cGF0aCBmaWxsPSIjYzdkMzAyIiBkPSJNNDguMTY4IDM5LjU0aDEyLjMyNHY1MC42OThINDguMTY4em0wIDAiLz48cGF0aCBmaWxsPSIjMDA5ZmUzIiBkPSJNMzIuMDQ3IDM5LjU0SDQ0LjM3djYxLjc5MkgzMi4wNDd6bTAgMCIvPjwvc3ZnPg%3D%3D&label=Unit%20Tests&labelColor=darkgreen">
 </a>&nbsp;
 <a href="https://app.codecov.io/gh/MitchMedeiros/MLCompare">
-    <img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/MitchMedeiros/MLCopmare?logo=codecov">
+    <img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/MitchMedeiros/MLCompare?logo=codecov&labelColor=black">
 </a>
 </div>
 
 <br>
 
 <div align="center">
-** This library is still in early developement. Expect many more features to come :D
+<b>This library is still in early development. Expect many more features to come :D</b>
 </div>
 
 <br>
