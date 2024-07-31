@@ -66,10 +66,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MitchMedeiros/mlcompare"
 Documentation = "https://mlcompare.readthedocs.io/en/latest/api_reference"
-Source = "https://github.com/MitchMedeiros/mlcompare"
 Changelog = "https://mlcompare.readthedocs.io/en/latest/release_notes"
+Repository = "https://github.com/MitchMedeiros/MLCompare"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mlcompare"]
