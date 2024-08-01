@@ -84,6 +84,19 @@ filterwarnings = ["ignore::DeprecationWarning:kaggle.rest"]
 
 [tool.ruff]
 line-length = 99
+exclude = [
+    ".eggs",
+    ".github",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "dist",
+    "docs",
+    "venv",
+]
 
 [tool.ruff.lint]
 ignore = ["E741"]

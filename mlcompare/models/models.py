@@ -48,16 +48,15 @@ class LibraryModel(ABC, BaseModel):
     """
 
     @abstractmethod
-    def model_post_init(self, Any):
-        ...
+    def model_post_init(self, Any) -> None: ...
 
     @abstractmethod
-    def train(self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series) -> None:
-        ...
+    def train(
+        self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series
+    ) -> None: ...
 
     @abstractmethod
-    def predict(self, X_test: pd.DataFrame):
-        ...
+    def predict(self, X_test: pd.DataFrame): ...
 
     def resolve_model_submodule(self) -> Any | None:
         imported_library = import_module(self._library)
@@ -136,7 +135,7 @@ class SklearnModel(LibraryModel):
 
     _library = "sklearn"
 
-    def model_post_init(self, Any):
+    def model_post_init(self, Any) -> None:
         self.instantiate_model()
 
     def train(self, X_train, y_train) -> None:
@@ -159,7 +158,7 @@ class XGBoostModel(LibraryModel):
 
     _library = "xgboost"
 
-    def model_post_init(self, Any):
+    def model_post_init(self, Any) -> None:
         self.instantiate_model()
 
     def train(self, X_train, y_train) -> None:
@@ -181,19 +180,50 @@ class PyTorchModel(LibraryModel):
     """
 
     _library = "torch"
+    device: Literal["cuda", "mps", "cpu"] | None = None
     activation: str
     loss: str
     optimizer: str = "Adam"
+    batch_size: int = 32
     epochs: int = 100
 
-    def model_post_init(self, Any):
-        self.instantiate_model()
+    def model_post_init(self, Any) -> None:
+        import torch
 
-    def train(self, X_train, y_train):
+        self.instantiate_model()
+        if self.device is None:
+            self.set_device()
+        else:
+            assert isinstance(self.device, torch.device)
+
+    def train(self, X_train, y_train) -> None:
         self._ml_model.fit(X_train, y_train)
 
     def predict(self, X_test):
         return self._ml_model.predict(X_test)
+
+    def set_device(self) -> None:
+        import torch
+
+        if self.device is not None:
+            match self.device:
+                case "cuda":
+                    self._torch_device = torch.device("cuda")
+                case "mps":
+                    self._torch_device = torch.device("mps")
+                case "cpu":
+                    self._torch_device = torch.device("cpu")
+                case _:
+                    raise ValueError("Device must be one of 'cuda', 'mps', or 'cpu'.")
+        else:
+            if torch.cuda.is_available():
+                self._torch_device = torch.device("cuda")
+            elif torch.backends.mps.is_available():
+                self._torch_device = torch.device("mps")
+            else:
+                self._torch_device = torch.device("cpu")
+
+        logger.info(f"Pytorch device type set to: {self._torch_device.type}")
 
 
 class TensorflowModel(LibraryModel):
