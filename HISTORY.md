@@ -1,3 +1,14 @@
+## v1.0.1 (2024-08-02)
+
+[GitHub release](https://github.com/MitchMedeiros/MLCompare/tag/v1.1.0)
+
+- Refactored DatasetProcessor, moving save_directory from a class attribute to a method argument
+- Added type validation to several methods within DatasetProcessor
+- Updated docstrings for the dataset_processor module
+- Updated unit tests for DatasetProcessor
+- Added optimal device selection for PyTorch models as default behavior
+- Corrected a logging issue with model processing
+
 ## v1.0.1 (2024-07-31)
 
 [GitHub release](https://github.com/MitchMedeiros/MLCompare/tag/v1.0.1)

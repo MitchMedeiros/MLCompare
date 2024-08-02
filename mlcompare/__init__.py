@@ -10,7 +10,7 @@ from .models.models import ModelFactory, process_models
 from .params_reader import ParamsReader
 from .pipelines import data_exploration_pipeline, full_pipeline
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 __title__ = "MLCompare"
 __author__ = "Mitchell Medeiros"
 __license__ = "MIT"
