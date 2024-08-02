@@ -29,8 +29,7 @@ class DatasetProcessor:
 
     Attributes:
     -----------
-        dataset (DatasetType): A Dataset type object containing a `get_data()` method and attributes needed for data processing.
-        data_directory (Path): Directory to save files to for the `save_dataframe` and `split_and_save_data` methods.
+        dataset (DatasetType): DatasetType object containing a `get_data()` method and attributes needed for data processing.
     """
 
     def __init__(self, dataset: DatasetType) -> None:
@@ -103,7 +102,7 @@ class DatasetProcessor:
 
         Returns:
         --------
-            pd.DataFrame: The DataFrame with the specified columns dropped.
+            pd.DataFrame: DataFrame with the specified columns dropped.
         """
         if self.drop:
             df = self.data.drop(self.drop, axis=1)
@@ -117,7 +116,7 @@ class DatasetProcessor:
 
         Returns:
         --------
-            pd.DataFrame: The stored DataFrame with the specified columns replaced with one-hot encoded columns.
+            pd.DataFrame: DataFrame with the specified columns replaced with one-hot encoded columns.
         """
         if self.onehot_encode:
             df = self.data
@@ -147,13 +146,14 @@ class DatasetProcessor:
 
         Args:
         -----
-            file_format (Literal["parquet", "csv", "json", "pickle"], optional): The format to use when
+            save_directory (Path | str): Directory to save the data to.
+            file_format (Literal["parquet", "csv", "json", "pickle"], optional): Format to use when
             saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
 
         Returns:
         --------
-            Path: The path to the saved file.
+            Path: Path to the saved data.
         """
         if not isinstance(file_format, str):
             raise ValueError("`file_format` must be a string.")
@@ -195,8 +195,7 @@ class DatasetProcessor:
 
         Args:
         -----
-            target (str): The column(s) to be used as the target variable(s).
-            test_size (float, optional): The proportion of the data to be used for testing. Defaults to 0.2.
+            test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
         --------
@@ -230,11 +229,12 @@ class DatasetProcessor:
 
         Args:
         -----
+            save_directory (Path | str): Directory to save the SplitData object to.
             test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
         --------
-            Path: The path to the saved SplitData object.
+            Path: Path to the saved SplitData object.
         """
         save_directory = validate_save_directory(save_directory)
 
@@ -266,6 +266,7 @@ class DatasetProcessor:
 
         Args:
         -----
+            save_directory (Path | str): The directory to save the data to.
             save_original (bool): Whether to save the original data.
             save_cleaned (bool): Whether to save the processed, nonsplit data.
 
@@ -309,13 +310,13 @@ def process_datasets(
     Args:
     -----
         params_list (ParamsInput): A list of dictionaries containing dataset parameters.
-        data_directory (Path): Directory to save the original, processed, and split data to.
+        save_directory (Path): Directory to save the data to.
         save_original (bool): Whether to save the original data.
         save_cleaned (bool): Whether to save the processed, nonsplit data.
 
     Returns:
     --------
-        A generator containing the split data for input into subsequent pipeline steps via iteration.
+        A Generator containing the split data for input into subsequent pipeline steps via iteration.
     """
     datasets = DatasetFactory(params_list)
     for dataset in datasets:
@@ -391,11 +392,11 @@ def validate_save_directory(save_directory: Path | str) -> Path:
 
     Args:
     -----
-        save_directory (Path | str): The directory to save files to.
+        save_directory (Path | str): Directory to save files to.
 
     Returns:
     --------
-        Path: The validated save directory.
+        Path: Path to the directory.
     """
     if not isinstance(save_directory, (Path)):
         if not isinstance(save_directory, str):
