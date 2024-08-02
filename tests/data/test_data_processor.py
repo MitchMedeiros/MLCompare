@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from kaggle.rest import ApiException
 
 from mlcompare import DataProcessor
@@ -19,6 +20,10 @@ class TestDataProcessor(unittest.TestCase):
 
         processor = DataProcessor(data=data)
         self.assertTrue(processor.data.equals(data))
+
+    def test_init_with_invalid_data(self):
+        with pytest.raises(Exception):
+            DataProcessor(dataset=123)
 
     def test_init_with_path_csv(self):
         # Create a temporary CSV file for testing
@@ -74,10 +79,6 @@ class TestDataProcessor(unittest.TestCase):
     def test_init_with_no_data(self):
         processor = DataProcessor()
         self.assertTrue(processor.data.empty)
-
-    def test_init_with_invalid_data(self):
-        with self.assertRaises(Exception):
-            DataProcessor(data=123)
 
     def test_download_kaggle_data_success(self):
         owner = "anthonytherrien"

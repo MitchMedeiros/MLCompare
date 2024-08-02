@@ -1,5 +1,9 @@
 from .data.data_processor import DataProcessor
-from .data.dataset_processor import DatasetProcessor
+from .data.dataset_processor import (
+    DatasetProcessor,
+    process_datasets,
+    process_datasets_to_files,
+)
 from .data.datasets import DatasetFactory
 from .data.split_data import SplitData, load_split_data
 from .models.models import ModelFactory, process_models
@@ -39,6 +43,8 @@ __all__ = [
     "DatasetFactory",
     "ModelFactory",
     "process_models",
+    "process_datasets",
+    "process_datasets_to_files",
     "ParamsReader",
     "full_pipeline",
     "SplitData",

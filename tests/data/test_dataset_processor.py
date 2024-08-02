@@ -1,275 +1,328 @@
-# import logging
-# import unittest
-# from pathlib import Path
+import logging
+import os
+import shutil
+from pathlib import Path
 
-# import pandas as pd
-# from kaggle.rest import ApiException
+import pandas as pd
+import pytest
 
-# from mlcompare import DatasetProcessor
+from mlcompare import DatasetProcessor, load_split_data, process_datasets
+from mlcompare.data.datasets import LocalDataset
 
-# logger = logging.getLogger("mlcompare.data.dataset_processor")
-
-
-# kaggle_dataset_params = {
-#     "type": "kaggle",
-#     "user": "anthonytherrien",
-#     "dataset": "restaurant-revenue-prediction-dataset",
-#     "file": "restaurant_data.csv",
-#     "target": "Revenue",
-#     "drop": ["Name"],
-#     "onehotEncode": ["Location", "Cuisine", "Parking Availability"],
-# }
+logger = logging.getLogger("mlcompare.data.dataset_processor")
 
 
-# class TestDatasetProcessor(unittest.TestCase):
-#     current_dir = Path(__file__).parent.resolve()
-#     two_column_data = {"A": [1, 2, 3], "B": [4, 5, 6]}
-#     save_directory = "run_pipeline_results"
-
-#     def test_init_with_dict(self):
-#         data = self.two_column_data
-#         processor = DatasetProcessor(dataset=data, data_directory=self.save_directory)
-#         self.assertTrue(processor.data.equals(data))
-
-#     def test_init_with_invalid_data(self):
-#         # Initialize DatasetProcessor with an invalid data type
-#         with self.assertRaises(Exception):
-#             DatasetProcessor(dataset=123, data_directory=self.save_directory)
-
-#     def test_init_with_dataframe(self):
-#         data = pd.DataFrame(self.two_column_data)
-#         processor = DatasetProcessor(dataset=data, data_directory=self.save_directory)
-#         self.assertTrue(processor.data.equals(data))
-
-#     def test_init_with_path_csv(self):
-#         # Create a temporary CSV file for testing
-#         csv_path = self.current_dir / "test.csv"
-#         data = pd.DataFrame(self.two_column_data)
-#         data.to_csv(csv_path, index=False)
-
-#         processor = DatasetProcessor(
-#             dataset=csv_path, data_directory=self.save_directory
-#         )
-#         self.assertTrue(processor.data.equals(data))
-
-#         csv_path.unlink()
-
-#     def test_init_with_path_parquet(self):
-#         # Create a temporary pickle file for testing
-#         parquet_path = self.current_dir / "test.parquet"
-#         data = pd.DataFrame(self.two_column_data)
-#         data.to_parquet(parquet_path)
-
-#         processor = DatasetProcessor(
-#             dataset=parquet_path, data_directory=self.save_directory
-#         )
-#         self.assertTrue(processor.data.equals(data))
-
-#         parquet_path.unlink()
-
-#     def test_init_with_path_pkl(self):
-#         # Create a temporary pickle file for testing
-#         pkl_path = self.current_dir / "test.pkl"
-#         data = pd.DataFrame(self.two_column_data)
-#         data.to_pickle(pkl_path)
-
-#         processor = DatasetProcessor(
-#             dataset=pkl_path, data_directory=self.save_directory
-#         )
-#         self.assertTrue(processor.data.equals(data))
-
-#         pkl_path.unlink()
-
-#     def test_init_with_path_json(self):
-#         # Create a temporary JSON file for testing
-#         json_path = self.current_dir / "test.json"
-#         data = pd.DataFrame(self.two_column_data)
-#         data.to_json(json_path, orient="records")
-
-#         processor = DatasetProcessor(
-#             dataset=json_path, data_directory=self.save_directory
-#         )
-#         self.assertTrue(processor.data.equals(data))
-
-#         json_path.unlink()
-
-#     def test_init_with_unsupported_file_type(self):
-#         # Create a temporary JSON file for testing
-#         html_path = self.current_dir / "test.html"
-#         data = pd.DataFrame(self.two_column_data)
-#         data.to_html(html_path)
-
-#         with self.assertRaises(Exception):
-#             DatasetProcessor(dataset=html_path, data_directory=self.save_directory)
-
-#         html_path.unlink()
-
-#     def test_download_kaggle_data_success(self):
-#         owner = "anthonytherrien"
-#         dataset_name = "restaurant-revenue-prediction-dataset"
-#         file_name = "restaurant_data.csv"
-
-#         processor = DatasetProcessor()
-#         downloaded_data = processor._download_kaggle_data(
-#             owner, dataset_name, file_name
-#         )
-
-#         # Check if the downloaded data is a DataFrame that is not empty and that it was set as the data attribute
-#         self.assertTrue(isinstance(downloaded_data, pd.DataFrame))
-#         self.assertTrue(downloaded_data.equals(processor.data))
-#         self.assertTrue(not downloaded_data.empty)
-
-#     def test_download_kaggle_data_failure(self):
-#         owner = "asdf"
-#         dataset_name = "asdf"
-#         file_name = "asdf"
-
-#         with self.assertRaises(ApiException):
-#             processor = DatasetProcessor()
-#             processor._download_kaggle_data(owner, dataset_name, file_name)
-
-#     def test_drop_columns(self):
-#         # Test dropping columns from the DataFrame
-#         data = pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
-#         processor = DatasetProcessor(data=data)
-#         processed_data = processor.drop_columns(["A", "C"])
-#         self.assertTrue(
-#             "A" not in processed_data.columns and "C" not in processed_data.columns
-#         )
-#         self.assertTrue("B" in processed_data.columns)
-
-#     def test_encode_columns(self):
-#         # Test encoding categorical columns
-#         data = pd.DataFrame({"Category": ["A", "B", "A"], "Value": [1, 2, 3]})
-#         processor = DatasetProcessor(data=data)
-#         processed_data = processor.onehot_encode_columns(["Category"])
-#         self.assertTrue(
-#             "Category_A" in processed_data.columns
-#             and "Category_B" in processed_data.columns
-#         )
-#         self.assertEqual(processed_data["Category_A"].sum(), 2)
-#         self.assertEqual(processed_data["Category_B"].sum(), 1)
-
-#     def test_split_data(self):
-#         # Test splitting data into training and testing sets
-#         data = pd.DataFrame({"Feature": [1, 2, 3, 4], "Target": [5, 6, 7, 8]})
-#         processor = DatasetProcessor(data=data)
-#         X_train, X_test, y_train, y_test = processor.split_data("Target")
-#         self.assertEqual(len(X_train) + len(X_test), 4)
-#         self.assertEqual(len(y_train) + len(y_test), 4)
-#         self.assertTrue(isinstance(X_train, pd.DataFrame))
-#         self.assertTrue(isinstance(X_test, pd.DataFrame))
-#         self.assertTrue(isinstance(y_train, pd.Series))
-#         self.assertTrue(isinstance(y_test, pd.Series))
-
-#     def test_save_data_csv(self):
-#         # Test saving data to a CSV file
-#         save_path = self.current_dir / "test.csv"
-#         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
-#         processor = DatasetProcessor(data=data)
-
-#         processor.save_dataframe(file_path=save_path)
-#         self.assertTrue(save_path.exists())
-
-#         save_path.unlink()
-
-#     def test_save_data_pickle(self):
-#         # Test saving data to a pickle file
-#         save_path = self.current_dir / "test.pkl"
-#         data = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
-#         processor = DatasetProcessor(data=data)
-
-#         processor.save_dataframe(file_path=save_path)
-#         self.assertTrue(save_path.exists())
-
-#         save_path.unlink()
-
-#     def test_download_format_and_save_parquet_data_from_dict(self):
-#         kaggle_dataset_params = {
-#             "username": "anthonytherrien",
-#             "dataset_name": "restaurant-revenue-prediction-dataset",
-#             "file_name": "restaurant_data.csv",
-#             "target_column": "Revenue",
-#             "columns_to_drop": ["Name"],
-#             "columns_to_encode": ["Location", "Cuisine", "Parking Availability"],
-#         }
-#         file_format = "parquet"
-#         save_path = (
-#             self.current_dir / f"{kaggle_dataset_params['dataset_name']}.{file_format}"
-#         )
-#         processor = DatasetProcessor()
-
-#         processor._download_kaggle_data(
-#             kaggle_dataset_params["username"],
-#             kaggle_dataset_params["dataset_name"],
-#             kaggle_dataset_params["file_name"],
-#         )
-#         processor.drop_columns(kaggle_dataset_params["columns_to_drop"])
-#         processor.onehot_encode_columns(kaggle_dataset_params["columns_to_encode"])
-#         processor.save_dataframe(save_path, file_format)
-
-#         self.assertTrue(save_path.exists())
-#         df = pd.read_parquet(save_path)
-#         self.assertTrue(not df.empty)
-#         self.assertTrue("Name" not in df.columns)
-#         self.assertTrue("Location" not in df.columns)
-#         self.assertTrue("Cuisine" not in df.columns)
-
-#         save_path.unlink()
-
-#     # Returns False when no missing values are present
-#     def test_missing_values_no_missing_values(self):
-#         data = {"A": [1, 2, 3], "B": ["value", "value", "value"]}
-#         processor = DatasetProcessor(data=data)
-#         result = processor.has_missing_values()
-#         self.assertFalse(result)
-
-#     # DataFrame is empty and should return False
-#     def test_missing_values_empty_dataframe(self):
-#         data = pd.DataFrame()
-#         processor = DatasetProcessor(data=data)
-#         result = processor.has_missing_values()
-#         self.assertFalse(result)
-
-#     # Detects NaN values in DataFrame and returns True
-#     def test_missing_values_none_value(self):
-#         data = {"A": [1, 2, None], "B": ["value", "value", "value"]}
-#         processor = DatasetProcessor(data=data)
-#         with self.assertRaises(ValueError):
-#             result = processor.has_missing_values()
-#             self.assertTrue(result)
-
-#     # Detects empty strings in DataFrame and returns True
-#     def test_missing_values_empty_strings(self):
-#         data = {"A": [1, 2, 3], "B": ["", "value", "value"]}
-#         processor = DatasetProcessor(data=data)
-#         with self.assertRaises(ValueError):
-#             result = processor.has_missing_values()
-#             self.assertTrue(result)
-
-#     # Detects "." values in DataFrame and returns True
-#     def test_missing_values_dot_values(self):
-#         data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
-#         processor = DatasetProcessor(data=data)
-#         with self.assertRaises(ValueError):
-#             result = processor.has_missing_values()
-#             self.assertTrue(result)
-
-#     # DataFrame contains mixed data types
-#     def test_multiple_missing_value_types(self):
-#         data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
-#         processor = DatasetProcessor(data=data)
-#         with self.assertRaises(ValueError):
-#             result = processor.has_missing_values()
-#             self.assertTrue(result)
-
-#     # Logs a warning message when missing values are found
-#     def test_logs_warning_message(self):
-#         data = {"A": [1, 2, None], "B": ["", "value", "."]}
-#         processor = DatasetProcessor(data=data)
-#         with self.assertLogs(logger, level="WARNING"):
-#             processor.has_missing_values(raise_exception=False)
+kaggle_dataset_params = {
+    "type": "kaggle",
+    "user": "anthonytherrien",
+    "dataset": "restaurant-revenue-prediction-dataset",
+    "file": "restaurant_data.csv",
+    "target": "Revenue",
+    "drop": ["Name"],
+    "onehotEncode": ["Location", "Cuisine", "Parking Availability"],
+}
 
 
-# if __name__ == "__main__":
-#     unittest.main()
+def create_dataset_processor(
+    data: dict, data_params: dict, data_path: str
+) -> DatasetProcessor:
+    path = Path(data_path)
+
+    df = pd.DataFrame(data)
+    df.to_csv(path, index=False)
+
+    try:
+        local_dataset = LocalDataset(**data_params)  # type: ignore
+        processor = DatasetProcessor(dataset=local_dataset)
+    finally:
+        os.remove(f"{path}")
+
+    return processor
+
+
+class TestDatasetProcessor:
+    # save_directory = "run_pipeline_results"
+    data = {
+        "A": [1, 2],
+        "B": [3, 4],
+        "C": [5, 6],
+        "D": [7, 8],
+        "E": [9, 10],
+        "F": [11, 12],
+    }
+    data_params = {
+        "path": "three_column.csv",
+        "target": "F",
+        "drop": ["A", "C"],
+        "onehotEncode": ["B"],
+    }
+    data_path = "three_column.csv"
+
+    def test_init(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        assert processor.data.equals(pd.DataFrame(self.data)) is True
+
+    def test_drop_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+        processed_data = processor.drop_columns()
+
+        assert "A" not in processed_data.columns and "C" not in processed_data.columns
+        assert "F" in processed_data.columns
+
+    def test_encode_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+        processed_data = processor.onehot_encode_columns()
+
+        assert "B_3" in processed_data.columns and "B_4" in processed_data.columns
+        assert "B" not in processed_data.columns
+        assert processed_data["B_3"].sum() == 1
+        assert processed_data["B_4"].sum() == 1
+
+    def test_missing_values_no_missing_values(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+        result = processor.has_missing_values()
+
+        assert result is False
+
+    def test_missing_values_empty_file(self):
+        empty_data = {"A": [], "B": []}
+        dataset_params = {
+            "path": "empty_data.csv",
+            "target": "A",
+        }
+        dataset_path = "empty_data.csv"
+
+        processor = create_dataset_processor(
+            empty_data,
+            dataset_params,
+            dataset_path,
+        )
+        result = processor.has_missing_values()
+        assert result is False
+
+    def test_missing_values_none_value(self):
+        none_data = {"A": [1, 2, None], "B": ["value1", "value2", "value3"]}
+        dataset_params = {
+            "path": "none_data.csv",
+            "target": "A",
+        }
+        dataset_path = "none_data.csv"
+
+        processor = create_dataset_processor(
+            none_data,
+            dataset_params,
+            dataset_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.has_missing_values()
+
+    def test_missing_values_empty_strings(self):
+        none_data = {"A": [1, 2, 3], "B": ["", "value", "value"]}
+        dataset_params = {
+            "path": "none_data.csv",
+            "target": "A",
+        }
+        dataset_path = "none_data.csv"
+
+        processor = create_dataset_processor(
+            none_data,
+            dataset_params,
+            dataset_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.has_missing_values()
+
+    def test_missing_values_dot_values(self):
+        none_data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
+        dataset_params = {
+            "path": "none_data.csv",
+            "target": "A",
+        }
+        dataset_path = "none_data.csv"
+
+        processor = create_dataset_processor(
+            none_data,
+            dataset_params,
+            dataset_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.has_missing_values()
+
+    def test_multiple_missing_value_types(self):
+        none_data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
+        dataset_params = {
+            "path": "none_data.csv",
+            "target": "A",
+        }
+        dataset_path = "none_data.csv"
+
+        processor = create_dataset_processor(
+            none_data,
+            dataset_params,
+            dataset_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.has_missing_values()
+
+    def test_missing_values_logging(self, caplog):
+        none_data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
+        dataset_params = {
+            "path": "none_data.csv",
+            "target": "A",
+        }
+        dataset_path = "none_data.csv"
+
+        processor = create_dataset_processor(
+            none_data,
+            dataset_params,
+            dataset_path,
+        )
+        processor.has_missing_values(raise_exception=False)
+        assert "Missing values found in DataFrame" in caplog.text
+
+    def test_split_data(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+        X_train, X_test, y_train, y_test = processor.split_data()
+
+        assert len(X_train) + len(X_test) == len(self.data["A"])
+        assert len(y_train) + len(y_test) == len(self.data["F"])
+        assert isinstance(X_train, pd.DataFrame)
+        assert isinstance(X_test, pd.DataFrame)
+        assert isinstance(y_train, pd.Series)
+        assert isinstance(y_test, pd.Series)
+
+    def test_split_data_invalid_test_size(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.split_data(test_size=1.1)
+
+    def test_save_data_parquet(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        try:
+            processor.save_dataframe(save_directory="save_testing")
+            assert Path("save_testing/three_column.parquet").exists()
+
+            df = pd.read_parquet("save_testing/three_column.parquet")
+            assert df.equals(pd.DataFrame(self.data)) is True
+        finally:
+            shutil.rmtree("save_testing")
+
+    def test_split_and_save_data(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        try:
+            file_path = processor.split_and_save_data(save_directory="save_testing")
+            assert file_path.exists()
+
+            X_train, X_test, y_train, y_test = load_split_data(file_path)
+            assert isinstance(X_train, pd.DataFrame)
+            assert isinstance(y_train, pd.Series)
+        finally:
+            os.remove(file_path)
+
+    def test_process_dataset(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        try:
+            processor.process_dataset(save_directory="save_testing")
+
+            assert Path("save_testing/three_column.parquet").exists()
+            assert Path("save_testing/three_column_processed.parquet").exists()
+        finally:
+            shutil.rmtree("save_testing")
+
+    def test_process_dataset_invalid_save_original_type(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.process_dataset(save_directory="save_testing", save_original=123)
+
+    def test_process_dataset_invalid_save_processed_type(self):
+        processor = create_dataset_processor(
+            self.data,
+            self.data_params,
+            self.data_path,
+        )
+
+        with pytest.raises(ValueError):
+            processor.process_dataset(save_directory="save_testing", save_processed=123)
+
+    def test_process_datasets(self):
+        params_list = [
+            {"type": "local", "path": "test1.csv", "target": "C", "drop": ["A"]},
+            {"type": "local", "path": "test2.csv", "target": "F", "drop": ["D"]},
+        ]
+
+        df = pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
+        df.to_csv("test1.csv", index=False)
+        df = pd.DataFrame({"D": [7, 8], "E": [9, 10], "F": [11, 12]})
+        df.to_csv("test2.csv", index=False)
+
+        try:
+            split_datasets = process_datasets(
+                params_list,
+                save_directory="save_testing",
+                save_original=False,
+                save_processed=False,
+            )
+
+            for X_train, X_test, y_train, y_test in split_datasets:
+                assert isinstance(X_train, pd.DataFrame)
+                assert isinstance(X_test, pd.DataFrame)
+                assert isinstance(y_train, pd.Series)
+                assert isinstance(y_test, pd.Series)
+                assert X_train.empty is False
+                assert X_test.empty is False
+                assert y_train.empty is False
+                assert y_test.empty is False
+
+        finally:
+            os.remove("test1.csv")
+            os.remove("test2.csv")

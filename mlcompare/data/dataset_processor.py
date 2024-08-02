@@ -258,7 +258,7 @@ class DatasetProcessor:
         self,
         save_directory: Path | str,
         save_original: bool = True,
-        save_cleaned: bool = True,
+        save_processed: bool = True,
     ) -> SplitDataTuple:
         """
         Performs all data processing steps based on the parameters provided to `DatasetProcessor`.
@@ -268,7 +268,7 @@ class DatasetProcessor:
         -----
             save_directory (Path | str): The directory to save the data to.
             save_original (bool): Whether to save the original data.
-            save_cleaned (bool): Whether to save the processed, nonsplit data.
+            save_processed (bool): Whether to save the processed, nonsplit data.
 
         Returns:
         --------
@@ -280,8 +280,8 @@ class DatasetProcessor:
         """
         if not isinstance(save_original, bool):
             raise ValueError("`save_original` must be a boolean.")
-        if not isinstance(save_cleaned, bool):
-            raise ValueError("`save_cleaned` must be a boolean.")
+        if not isinstance(save_processed, bool):
+            raise ValueError("`save_processed` must be a boolean.")
 
         if save_original:
             self.save_dataframe(save_directory=save_directory)
@@ -290,7 +290,7 @@ class DatasetProcessor:
         self.drop_columns()
         self.onehot_encode_columns()
 
-        if save_cleaned:
+        if save_processed:
             self.save_dataframe(
                 save_directory=save_directory, file_name_ending="_processed"
             )
@@ -302,7 +302,7 @@ def process_datasets(
     params_list: ParamsInput,
     save_directory: Path | str,
     save_original: bool = True,
-    save_cleaned: bool = True,
+    save_processed: bool = True,
 ) -> Generator[SplitDataTuple, None, None]:
     """
     Downloads and processes data from multiple datasets that have been validated.
@@ -312,7 +312,7 @@ def process_datasets(
         params_list (ParamsInput): A list of dictionaries containing dataset parameters.
         save_directory (Path): Directory to save the data to.
         save_original (bool): Whether to save the original data.
-        save_cleaned (bool): Whether to save the processed, nonsplit data.
+        save_processed (bool): Whether to save the processed, nonsplit data.
 
     Returns:
     --------
@@ -325,7 +325,7 @@ def process_datasets(
             split_data = processor.process_dataset(
                 save_directory,
                 save_original,
-                save_cleaned,
+                save_processed,
             )
             yield split_data
         except Exception:
@@ -337,7 +337,7 @@ def process_datasets_to_files(
     params_list: ParamsInput,
     save_directory: Path | str,
     save_original: bool = True,
-    save_cleaned: bool = True,
+    save_processed: bool = True,
 ) -> list[Path]:
     """
     Downloads and processes data from multiple datasets that have been validated.
@@ -347,7 +347,7 @@ def process_datasets_to_files(
         datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
         data_directory (Path): Directory to save the original and processed data.
         save_original (bool): Whether to save the original data.
-        save_cleaned (bool): Whether to save the processed, nonsplit data.
+        save_processed (bool): Whether to save the processed, nonsplit data.
 
     Returns:
     --------
@@ -363,7 +363,7 @@ def process_datasets_to_files(
             X_train, X_test, y_train, y_test = processor.process_dataset(
                 save_directory,
                 save_original,
-                save_cleaned,
+                save_processed,
             )
 
             file_path = save_directory / f"{processor.save_name}_split.pkl"
