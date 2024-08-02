@@ -138,7 +138,7 @@ class DatasetProcessor:
     def save_dataframe(
         self,
         save_directory: Path | str,
-        file_format: Literal["parquet", "csv", "json", "pickle"] = "parquet",
+        file_format: Literal["parquet", "csv", "json", "pkl"] = "parquet",
         file_name_ending: str = "",
     ) -> Path:
         """
@@ -147,7 +147,7 @@ class DatasetProcessor:
         Args:
         -----
             save_directory (Path | str): Directory to save the data to.
-            file_format (Literal["parquet", "csv", "json", "pickle"], optional): Format to use when
+            file_format (Literal["parquet", "csv", "json", "pkl"], optional): Format to use when
             saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
 
@@ -161,26 +161,29 @@ class DatasetProcessor:
             raise ValueError("`file_name_ending` must be a string.")
 
         save_directory = validate_save_directory(save_directory)
+        file_path = save_directory / f"{self.save_name}{file_name_ending}.{file_format}"
 
-        file_path = save_directory / f"{self.save_name}{file_name_ending}"
+        file_count = 1
+        while file_path.exists():
+            file_path = (
+                save_directory
+                / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
+            )
+            file_count += 1
 
         try:
             match file_format:
                 case "parquet":
-                    file_path = file_path.with_suffix(".parquet")
                     self.data.to_parquet(file_path, index=False, compression="gzip")
                 case "csv":
-                    file_path = file_path.with_suffix(".csv")
                     self.data.to_csv(file_path, index=False)
-                case "pickle":
-                    file_path = file_path.with_suffix(".pkl")
+                case "pkl":
                     self.data.to_pickle(file_path)
                 case "json":
-                    file_path = file_path.with_suffix(".json")
                     self.data.to_json(file_path, orient="records")
                 case _:
                     raise ValueError(
-                        "Invalid `file_format` provided. Must be one of: 'parquet', 'csv', 'json', 'pickle'."
+                        "Invalid `file_format` provided. Must be one of: 'parquet', 'csv', 'json', 'pkl'."
                     )
             logger.info(f"Data saved to: {file_path}")
         except FileNotFoundError:
@@ -236,18 +239,21 @@ class DatasetProcessor:
         --------
             Path: Path to the saved SplitData object.
         """
-        save_directory = validate_save_directory(save_directory)
-
-        file_path = save_directory / f"{self.save_name}_split.pkl"
-
         X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
-
         split_data_obj = SplitData(
             X_train=X_train,
             X_test=X_test,
             y_train=y_train,
             y_test=y_test,
         )
+
+        save_directory = validate_save_directory(save_directory)
+        file_path = save_directory / f"{self.save_name}-split.pkl"
+
+        file_count = 1
+        while file_path.exists():
+            file_path = save_directory / f"{self.save_name}-split-{file_count}.pkl"
+            file_count += 1
 
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)
@@ -284,7 +290,9 @@ class DatasetProcessor:
             raise ValueError("`save_processed` must be a boolean.")
 
         if save_original:
-            self.save_dataframe(save_directory=save_directory)
+            self.save_dataframe(
+                save_directory=save_directory, file_name_ending="-original"
+            )
 
         self.has_missing_values()
         self.drop_columns()
@@ -292,7 +300,7 @@ class DatasetProcessor:
 
         if save_processed:
             self.save_dataframe(
-                save_directory=save_directory, file_name_ending="_processed"
+                save_directory=save_directory, file_name_ending="-processed"
             )
 
         return self.split_data()
@@ -366,7 +374,7 @@ def process_datasets_to_files(
                 save_processed,
             )
 
-            file_path = save_directory / f"{processor.save_name}_split.pkl"
+            file_path = save_directory / f"{processor.save_name}-split.pkl"
             split_data_paths.append(file_path)
         except Exception:
             logger.error("Failed to process dataset.")

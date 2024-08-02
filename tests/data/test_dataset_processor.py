@@ -24,9 +24,9 @@ kaggle_dataset_params = {
 
 
 def create_dataset_processor(
-    data: dict, data_params: dict, data_path: str
+    data: dict, data_params: dict, save_path: str
 ) -> DatasetProcessor:
-    path = Path(data_path)
+    path = Path(save_path)
 
     df = pd.DataFrame(data)
     df.to_csv(path, index=False)
@@ -242,6 +242,37 @@ class TestDatasetProcessor:
         finally:
             shutil.rmtree("save_testing")
 
+    def test_save_data_same_file_name(self):
+        # Create two csv files in different parent directories with the same file name
+        data_params1 = {"path": "test1/name_test.csv", "target": "C", "drop": ["A"]}
+        data_params2 = {"path": "test2/name_test.csv", "target": "C", "drop": ["A"]}
+
+        test1_path = Path("test1")
+        test2_path = Path("test2")
+        test1_path.mkdir(exist_ok=True)
+        test2_path.mkdir(exist_ok=True)
+
+        try:
+            processor1 = create_dataset_processor(
+                self.data, data_params1, "test1/name_test.csv"
+            )
+            processor2 = create_dataset_processor(
+                self.data, data_params2, "test2/name_test.csv"
+            )
+
+            # Save the DataFrames to the same directory and check that they are saved with different names
+            processor1.drop_columns()
+            processor1.save_dataframe("name_save_testing")
+            processor2.save_dataframe("name_save_testing")
+
+            assert Path("name_save_testing/name_test.parquet").exists()
+            assert Path("name_save_testing/name_test-1.parquet").exists()
+
+        finally:
+            shutil.rmtree("test1")
+            shutil.rmtree("test2")
+            shutil.rmtree("name_save_testing")
+
     def test_split_and_save_data(self):
         processor = create_dataset_processor(
             self.data,
@@ -269,8 +300,8 @@ class TestDatasetProcessor:
         try:
             processor.process_dataset(save_directory="save_testing")
 
-            assert Path("save_testing/three_column.parquet").exists()
-            assert Path("save_testing/three_column_processed.parquet").exists()
+            assert Path("save_testing/three_column-original.parquet").exists()
+            assert Path("save_testing/three_column-processed.parquet").exists()
         finally:
             shutil.rmtree("save_testing")
 
