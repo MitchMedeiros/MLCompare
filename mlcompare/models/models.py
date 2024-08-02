@@ -79,7 +79,6 @@ class LibraryModel(ABC, BaseModel):
         else:
             full_import = self._library
 
-        # Import the library/library.module
         try:
             model_module = import_module(full_import)
         except ImportError:
@@ -399,11 +398,12 @@ def process_models(
         try:
             model.train(X_train, y_train)
             prediction = model.predict(X_test)
-
             model_results = evaluate_prediction(
                 y_test, prediction, model._ml_model.__class__.__name__
             )
             append_json(model_results)
         except Exception:
-            logger.error(f"Failed to process model: {model.name}")
+            logger.error(
+                f"Failed to process model: {model._ml_model.__class__.__name__}"
+            )
             raise

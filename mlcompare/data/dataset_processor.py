@@ -33,22 +33,17 @@ class DatasetProcessor:
         data_directory (Path): Directory to save files to for the `save_dataframe` and `split_and_save_data` methods.
     """
 
-    def __init__(self, dataset: DatasetType, data_directory: Path) -> None:
+    def __init__(self, dataset: DatasetType) -> None:
         if not isinstance(
             dataset, (KaggleDataset, LocalDataset, HuggingFaceDataset, OpenMLDataset)
         ):
             raise ValueError("Data must be a KaggleDataset or LocalDataset object.")
-
-        if not isinstance(data_directory, Path):
-            raise ValueError("Data directory must be a Path object.")
 
         self.data = dataset.get_data()
         self.target = dataset.target
         self.save_name = dataset.save_name
         self.drop = dataset.drop
         self.onehot_encode = dataset.onehot_encode
-
-        self.data_directory = data_directory
 
     def has_missing_values(
         self, drop_rows: bool = False, raise_exception: bool = True
@@ -71,6 +66,11 @@ class DatasetProcessor:
         -------
             ValueError: If missing values are found and `raise_exception` is True.
         """
+        if not isinstance(drop_rows, bool):
+            raise ValueError("`drop_rows` must be a boolean.")
+        if not isinstance(raise_exception, bool):
+            raise ValueError("`raise_exception` must be a boolean.")
+
         df = self.data
 
         # Convert from numpy bool_ type to be safe
@@ -138,6 +138,7 @@ class DatasetProcessor:
 
     def save_dataframe(
         self,
+        save_directory: Path | str,
         file_format: Literal["parquet", "csv", "json", "pickle"] = "parquet",
         file_name_ending: str = "",
     ) -> Path:
@@ -154,7 +155,14 @@ class DatasetProcessor:
         --------
             Path: The path to the saved file.
         """
-        file_path = self.data_directory / f"{self.save_name}{file_name_ending}"
+        if not isinstance(file_format, str):
+            raise ValueError("`file_format` must be a string.")
+        if not isinstance(file_name_ending, str):
+            raise ValueError("`file_name_ending` must be a string.")
+
+        save_directory = validate_save_directory(save_directory)
+
+        file_path = save_directory / f"{self.save_name}{file_name_ending}"
 
         try:
             match file_format:
@@ -171,7 +179,9 @@ class DatasetProcessor:
                     file_path = file_path.with_suffix(".json")
                     self.data.to_json(file_path, orient="records")
                 case _:
-                    raise ValueError("Invalid file format provided.")
+                    raise ValueError(
+                        "Invalid `file_format` provided. Must be one of: 'parquet', 'csv', 'json', 'pickle'."
+                    )
             logger.info(f"Data saved to: {file_path}")
         except FileNotFoundError:
             logger.exception(f"Could not save dataset to {file_path}.")
@@ -196,24 +206,25 @@ class DatasetProcessor:
                 y_train (pd.DataFrame | pd.Series): Training data for target variable(s).
                 y_test (pd.DataFrame | pd.Series): Testing data for target variable(s).
         """
-        if self.target is None:
-            raise ValueError("No target column provided within the dataset parameters.")
+        if not isinstance(test_size, float):
+            raise ValueError("`test_size` must be a float.")
+        if test_size <= 0 or test_size >= 1:
+            raise ValueError("`test_size` must be between 0 and 1.")
 
         X = self.data.drop(columns=self.target)
         y = self.data[self.target]
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=test_size,
-            random_state=0,
+            X, y, test_size=test_size, random_state=0
         )
         logger.info(
             f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
         )
         return X_train, X_test, y_train, y_test
 
-    def split_and_save_data(self, test_size: float = 0.2) -> Path:
+    def split_and_save_data(
+        self, save_directory: Path | str, test_size: float = 0.2
+    ) -> Path:
         """
         Splits the data and saves it to a single pickle file as a SplitData object.
 
@@ -225,6 +236,10 @@ class DatasetProcessor:
         --------
             Path: The path to the saved SplitData object.
         """
+        save_directory = validate_save_directory(save_directory)
+
+        file_path = save_directory / f"{self.save_name}_split.pkl"
+
         X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
 
         split_data_obj = SplitData(
@@ -234,31 +249,57 @@ class DatasetProcessor:
             y_test=y_test,
         )
 
-        save_path = self.data_directory / f"{self.save_name}_split.pkl"
-        with open(save_path, "wb") as file:
+        with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)
-        logger.info(f"Split data saved to: {save_path}")
-        return save_path
+        logger.info(f"Split data saved to: {file_path}")
+        return file_path
 
-    def process_and_save_dataset(
-        self, save_original: bool, save_cleaned: bool
+    def process_dataset(
+        self,
+        save_directory: Path | str,
+        save_original: bool = True,
+        save_cleaned: bool = True,
     ) -> SplitDataTuple:
+        """
+        Performs all data processing steps based on the parameters provided to `DatasetProcessor`.
+        Optionally saves the original and processed data to files.
+
+        Args:
+        -----
+            save_original (bool): Whether to save the original data.
+            save_cleaned (bool): Whether to save the processed, nonsplit data.
+
+        Returns:
+        --------
+            SplitDataTuple:
+                X_train (pd.DataFrame): Training data for features.
+                X_test (pd.DataFrame): Testing data for features.
+                y_train (pd.DataFrame | pd.Series): Training data for target variable(s).
+                y_test (pd.DataFrame | pd.Series): Testing data for target variable(s).
+        """
+        if not isinstance(save_original, bool):
+            raise ValueError("`save_original` must be a boolean.")
+        if not isinstance(save_cleaned, bool):
+            raise ValueError("`save_cleaned` must be a boolean.")
+
         if save_original:
-            self.save_dataframe()
+            self.save_dataframe(save_directory=save_directory)
 
         self.has_missing_values()
         self.drop_columns()
         self.onehot_encode_columns()
 
         if save_cleaned:
-            self.save_dataframe(file_name_ending="_cleaned")
+            self.save_dataframe(
+                save_directory=save_directory, file_name_ending="_processed"
+            )
 
         return self.split_data()
 
 
 def process_datasets(
     params_list: ParamsInput,
-    data_directory: Path,
+    save_directory: Path | str,
     save_original: bool = True,
     save_cleaned: bool = True,
 ) -> Generator[SplitDataTuple, None, None]:
@@ -279,8 +320,12 @@ def process_datasets(
     datasets = DatasetFactory(params_list)
     for dataset in datasets:
         try:
-            processor = DatasetProcessor(dataset, data_directory)
-            split_data = processor.process_and_save_dataset(save_original, save_cleaned)
+            processor = DatasetProcessor(dataset)
+            split_data = processor.process_dataset(
+                save_directory,
+                save_original,
+                save_cleaned,
+            )
             yield split_data
         except Exception:
             logger.error("Failed to process dataset.")
@@ -289,7 +334,7 @@ def process_datasets(
 
 def process_datasets_to_files(
     params_list: ParamsInput,
-    data_directory: Path,
+    save_directory: Path | str,
     save_original: bool = True,
     save_cleaned: bool = True,
 ) -> list[Path]:
@@ -307,22 +352,56 @@ def process_datasets_to_files(
     --------
         list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
     """
+    save_directory = validate_save_directory(save_directory)
+
     split_data_paths = []
     datasets = DatasetFactory(params_list)
     for dataset in datasets:
-        processor = DatasetProcessor(dataset, data_directory)
+        try:
+            processor = DatasetProcessor(dataset)
+            X_train, X_test, y_train, y_test = processor.process_dataset(
+                save_directory,
+                save_original,
+                save_cleaned,
+            )
 
-        if save_original:
-            processor.save_dataframe()
+            file_path = save_directory / f"{processor.save_name}_split.pkl"
+            split_data_paths.append(file_path)
+        except Exception:
+            logger.error("Failed to process dataset.")
+            raise
 
-        processor.has_missing_values()
-        processor.drop_columns()
-        processor.onehot_encode_columns()
+        split_data_obj = SplitData(
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+        )
 
-        if save_cleaned:
-            processor.save_dataframe(file_name_ending="_cleaned")
-
-        save_path = processor.split_and_save_data()
-        split_data_paths.append(save_path)
+        with open(file_path, "wb") as file:
+            pickle.dump(split_data_obj, file)
+        logger.info(f"Split data saved to: {file_path}")
 
     return split_data_paths
+
+
+def validate_save_directory(save_directory: Path | str) -> Path:
+    """
+    Validates the save directory and creates it if it does not exist.
+
+    Args:
+    -----
+        save_directory (Path | str): The directory to save files to.
+
+    Returns:
+    --------
+        Path: The validated save directory.
+    """
+    if not isinstance(save_directory, (Path)):
+        if not isinstance(save_directory, str):
+            raise ValueError("`save_directory` must be a string or Path object.")
+        else:
+            save_directory = Path(save_directory)
+
+    save_directory.mkdir(exist_ok=True)
+    return save_directory

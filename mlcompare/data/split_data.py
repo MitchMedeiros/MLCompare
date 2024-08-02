@@ -32,7 +32,7 @@ class SplitData(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-def load_split_data(load_path: Path) -> SplitDataTuple:
+def load_split_data(load_path: Path | str) -> SplitDataTuple:
     """
     Loads a SplitData object from a pickle file and returns the data it was holding.
 
@@ -44,6 +44,12 @@ def load_split_data(load_path: Path) -> SplitDataTuple:
     --------
         SplitDataTuple: Tuple of length 4 containing the training and testing data split by features and target.
     """
+    if not isinstance(load_path, (Path)):
+        if not isinstance(load_path, str):
+            raise ValueError("`load_path` must be a string or Path object.")
+        else:
+            load_path = Path(load_path)
+
     with open(load_path, "rb") as file:
         split_data = pickle.load(file)
 
