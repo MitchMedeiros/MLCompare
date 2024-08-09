@@ -7,7 +7,7 @@ from typing import Generator, Literal
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 
 from ..params_reader import ParamsInput
 from .datasets import (
@@ -42,59 +42,75 @@ class DatasetProcessor:
         self.target = dataset.target
         self.save_name = dataset.save_name
         self.drop = dataset.drop
+        self.nan = dataset.nan
         self.onehot_encode = dataset.onehot_encode
 
-    def has_missing_values(
-        self, drop_rows: bool = False, raise_exception: bool = True
-    ) -> bool:
+    def drop_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
-        Checks for missing values: NaN, "", and "." in the DataFrame and either logs them, raises an
-        exception, or drops the rows with missing values,
+        Checks for missing values: NaN, "", and "." in the DataFrame and either forward-fills, backwards-fills, drops them,
+        or simply logs how many exist. Raises an exception instead is `raise_exception`=True.
 
         Args:
         -----
-            drop_rows (bool, optional): Whether to drop rows with missing values. Defaults to False.
             raise_exception (bool, optional): Whether to raise an exception if missing values are found.
-            Defaults to True. Ignored if `drop_rows` is True.
+            Defaults to False.
 
         Returns:
         --------
-            bool: True if there are missing values, False otherwise.
+            pd.DataFrame: DataFrame with the missing values either forward-filled, backward-filled,
+            or dropped or neither if a method is provided for the dataset.
 
         Raises:
         -------
             ValueError: If missing values are found and `raise_exception` is True.
         """
-        if not isinstance(drop_rows, bool):
-            raise ValueError("`drop_rows` must be a boolean.")
         if not isinstance(raise_exception, bool):
             raise ValueError("`raise_exception` must be a boolean.")
 
-        df = self.data
+        if self.nan:
+            df = self.data
 
-        # Convert from numpy bool_ type to be safe
-        has_nan = bool(df.isnull().values.any())
-        has_empty_strings = bool((df == "").values.any())
-        has_dot_values = bool((df == ".").values.any())
+            # Convert from numpy bool_ type to be safe
+            has_nan = bool(df.isna().values.any())
+            has_empty_strings = bool((df == "").values.any())
+            has_dot_values = bool((df == ".").values.any())
+            missing_values = has_nan or has_empty_strings or has_dot_values
 
-        missing_values = has_nan or has_empty_strings or has_dot_values
-
-        if missing_values:
-            logger.warning(
-                f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
-                f"\nDataFrame:\n{df.head(3)}"
-            )
-            if drop_rows:
-                df = df.dropna()
-                logger.info(
-                    f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
+            if missing_values:
+                logger.warning(
+                    f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
+                    f"\nDataFrame:\n{df.head(3)}"
                 )
-                self.data = df
-            elif raise_exception:
-                raise ValueError(
-                    "Missing values found in DataFrame. Set `drop_rows=True` to drop them or `raise_exception=False` to continue processing."
-                )
-        return missing_values
+                if raise_exception:
+                    raise ValueError(
+                        "Missing values found in DataFrame. Set `raise_exception=False` for `DatasetProcessor.drop_nan()` "
+                        "to continue processing anyways."
+                    )
+                else:
+                    df = df.replace(".", None)
+                    df = df.replace("", None)
+
+                    match self.nan:
+                        case "ffill":
+                            df = df.ffill()
+                        case "bfill":
+                            df = df.bfill()
+                        case "drop":
+                            df = df.dropna()
+                        case _:
+                            raise ValueError(
+                                "Unexpected value for `nan` given. Allowed values are 'ffill', 'bfill', and 'drop'."
+                            )
+
+                    assert (
+                        bool(df.isna().values.any()) is False
+                    ), "drop_nan failed to remove all NaN values."
+                    logger.info(
+                        f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
+                    )
+                    self.data = df
+
+        return self.data
 
     def drop_columns(self) -> pd.DataFrame:
         """
@@ -134,6 +150,9 @@ class DatasetProcessor:
             )
             self.data = df
         return self.data
+
+    def label_encode_columns(self) -> pd.DataFrame:
+        pass
 
     def save_dataframe(
         self,
@@ -294,8 +313,8 @@ class DatasetProcessor:
                 save_directory=save_directory, file_name_ending="-original"
             )
 
-        self.has_missing_values()
         self.drop_columns()
+        self.drop_nan()
         self.onehot_encode_columns()
 
         if save_processed:

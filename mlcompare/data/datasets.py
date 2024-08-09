@@ -71,6 +71,7 @@ class BaseDataset(ABC, BaseModel):
     target: str
     save_name: str | None = Field(None, alias="saveName")
     drop: list[str] | None = None
+    nan: Literal["ffill", "bfill", "drop"] | None = None
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
 
     @abstractmethod
