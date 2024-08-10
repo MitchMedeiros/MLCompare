@@ -54,8 +54,7 @@ class DatasetProcessor:
 
         Args:
         -----
-            raise_exception (bool, optional): Whether to raise an exception if missing values are found.
-            Defaults to False.
+            raise_exception (bool, optional): Whether to raise an exception if missing values are found. Defaults to False.
 
         Returns:
         --------
@@ -154,6 +153,13 @@ class DatasetProcessor:
         return self.data
 
     def label_encode_columns(self) -> pd.DataFrame:
+        """
+        Label encodes the specified columns and replaces them in the DataFrame.
+
+        Returns:
+        --------
+            pd.DataFrame: DataFrame with the specified columns replaced with label encoded columns.
+        """
         if self.label_encode:
             df = self.data
 
@@ -171,6 +177,13 @@ class DatasetProcessor:
         return self.data
 
     def ordinal_encode_columns(self) -> pd.DataFrame:
+        """
+        Ordinal encodes the specified columns and replaces them in the DataFrame.
+
+        Returns:
+        --------
+            pd.DataFrame: DataFrame with the specified columns replaced with ordinal encoded columns.
+        """
         if self.ordinal_encode:
             df = self.data
 
