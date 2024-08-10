@@ -56,7 +56,7 @@ class TestDatasetProcessor:
         "path": "three_column.csv",
         "target": "F",
         "drop": ["A", "C"],
-        "onehotEncode": ["B"],
+        "onehotEncode": ["B", "D"],
         "nan": "drop",
     }
     data_path = "three_column.csv"
@@ -81,7 +81,7 @@ class TestDatasetProcessor:
         assert "A" not in processed_data.columns and "C" not in processed_data.columns
         assert "F" in processed_data.columns
 
-    def test_encode_columns(self):
+    def test_onehot_encode_columns(self):
         processor = create_dataset_processor(
             self.data,
             self.data_params,
@@ -91,8 +91,53 @@ class TestDatasetProcessor:
 
         assert "B_3" in processed_data.columns and "B_4" in processed_data.columns
         assert "B" not in processed_data.columns
+        assert "D" not in processed_data.columns
         assert processed_data["B_3"].sum() == 1
         assert processed_data["B_4"].sum() == 1
+
+    def test_label_encode_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "three_column.csv",
+                "target": "F",
+                "labelEncode": ["D", "E"],
+            },
+            self.data_path,
+        )
+        processed_data = processor.label_encode_columns()
+
+        assert "D" in processed_data.columns and "E" in processed_data.columns
+        assert (
+            processed_data["D"].sum()
+            == len(processor.data["D"]) * (len(processor.data["D"]) - 1) / 2
+        )
+        assert (
+            processed_data["E"].sum()
+            == len(processor.data["E"]) * (len(processor.data["E"]) - 1) / 2
+        )
+
+    def test_ordinal_encode_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "three_column.csv",
+                "target": "F",
+                "ordinalEncode": ["D", "E"],
+            },
+            self.data_path,
+        )
+        processed_data = processor.ordinal_encode_columns()
+
+        assert "D" in processed_data.columns and "E" in processed_data.columns
+        assert (
+            processed_data["D"].sum()
+            == len(processor.data["D"]) * (len(processor.data["D"]) - 1) / 2
+        )
+        assert (
+            processed_data["E"].sum()
+            == len(processor.data["E"]) * (len(processor.data["E"]) - 1) / 2
+        )
 
     def test_drop_nan_no_missing_values(self):
         processor = create_dataset_processor(
@@ -170,7 +215,7 @@ class TestDatasetProcessor:
         with pytest.raises(ValueError):
             processor2.drop_nan(raise_exception=True)
 
-    def test_missing_values_dot_values(self):
+    def test_drop_nan_dot_values(self):
         none_data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
         dataset_params = {
             "path": "none_data.csv",
@@ -222,7 +267,7 @@ class TestDatasetProcessor:
         with pytest.raises(ValueError):
             processor2.drop_nan(raise_exception=True)
 
-    def test_nan_values_logging(self, caplog):
+    def test_drop_nan_logging(self, caplog):
         none_data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
         dataset_params = {
             "path": "none_data.csv",

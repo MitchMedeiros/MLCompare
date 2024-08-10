@@ -7,7 +7,7 @@ from typing import Generator, Literal
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder
 
 from ..params_reader import ParamsInput
 from .datasets import (
@@ -44,6 +44,8 @@ class DatasetProcessor:
         self.drop = dataset.drop
         self.nan = dataset.nan
         self.onehot_encode = dataset.onehot_encode
+        self.label_encode = dataset.label_encode
+        self.ordinal_encode = dataset.ordinal_encode
 
     def drop_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
@@ -152,7 +154,38 @@ class DatasetProcessor:
         return self.data
 
     def label_encode_columns(self) -> pd.DataFrame:
-        pass
+        if self.label_encode:
+            df = self.data
+
+            for column in self.label_encode:
+                encoder = LabelEncoder()
+                encoded_array = encoder.fit_transform(df[column])
+
+                encoded_column_df = pd.DataFrame(encoded_array, columns=[column])
+                df = df.drop(columns=[column]).join(encoded_column_df)
+
+            logger.info(
+                f"Columns: {self.label_encode} successfully label encoded:\n{df.head(3)}"
+            )
+            self.data = df
+        return self.data
+
+    def ordinal_encode_columns(self) -> pd.DataFrame:
+        if self.ordinal_encode:
+            df = self.data
+
+            for column in self.ordinal_encode:
+                encoder = OrdinalEncoder()
+                encoded_array = encoder.fit_transform(df[[column]])
+
+                encoded_column_df = pd.DataFrame(encoded_array, columns=[column])
+                df = df.drop(columns=[column]).join(encoded_column_df)
+
+            logger.info(
+                f"Columns: {self.ordinal_encode} successfully ordinal encoded:\n{df.head(3)}"
+            )
+            self.data = df
+        return self.data
 
     def save_dataframe(
         self,
