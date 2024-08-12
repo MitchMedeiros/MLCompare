@@ -64,10 +64,11 @@ MLCompare is a Python package for running model comparison pipelines, with the a
         </td>
         <td>
             <ul>
-                <li><b>Encode</b>: One-hot | Label</li>
-                <!-- <li><b>Regularize</b>: Standard | Min-Max</li> -->
-                <!-- <li><b>NaNs</b>: Drop | ffill | bfill | Averaging</li> -->
-                <li><b>Drop Columns</b></li>
+                <li>Train-test split</li>
+                <li>Drop Columns</li>
+                <li><b>Encode</b>: One-hot | Ordinal | Label</li>
+                <li><b>Regularize</b>: Standard | MinMax</li>
+                <li><b>NaNs</b>: Drop | Forward-fill | Backward-fill</li>
             </ul>
         </td>
     </tr>
@@ -75,14 +76,14 @@ MLCompare is a Python package for running model comparison pipelines, with the a
 
 <h2>Installing</h2>
 
-<!-- It is recommended to create a new virtual environment. Ex. with Conda:
+It is recommended to create a new virtual environment. Example with Conda:
 
-```sh
-    conda create -n compare_env python==3.11.9
-    conda activate compare_env
+```console
+conda create -n compare_env python==3.11.9
+conda activate compare_env
 ```
 
-Install this library with pip: -->
+Install this library with pip:
 
 ```console
 pip install mlcompare
