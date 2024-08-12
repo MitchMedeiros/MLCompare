@@ -12,24 +12,11 @@ from mlcompare.data.datasets import LocalDataset
 logger = logging.getLogger("mlcompare.data.dataset_processor")
 
 
-kaggle_dataset_params = {
-    "type": "kaggle",
-    "user": "anthonytherrien",
-    "dataset": "restaurant-revenue-prediction-dataset",
-    "file": "restaurant_data.csv",
-    "target": "Revenue",
-    "drop": ["Name"],
-    "onehotEncode": ["Location", "Cuisine", "Parking Availability"],
-}
-
-
-def create_dataset_processor(
-    data: dict,
-    data_params: dict,
-    save_path: str,
-) -> DatasetProcessor:
-    path = Path(save_path)
-
+def create_dataset_processor(data: dict, data_params: dict) -> DatasetProcessor:
+    """
+    Utility function for testing that creates a csv file, a LocalDataset, and a DatasetProcessor.
+    """
+    path = Path(data_params["path"])
     df = pd.DataFrame(data)
     df.to_csv(path, index=False)
 
@@ -43,7 +30,6 @@ def create_dataset_processor(
 
 
 class TestDatasetProcessor:
-    # save_directory = "run_pipeline_results"
     data = {
         "A": [1, 2],
         "B": [3, 4],
@@ -53,40 +39,27 @@ class TestDatasetProcessor:
         "F": [11, 12],
     }
     data_params = {
-        "path": "three_column.csv",
+        "path": "integer_data.csv",
         "target": "F",
         "drop": ["A", "C"],
         "onehotEncode": ["B", "D"],
         "nan": "drop",
     }
-    data_path = "three_column.csv"
 
     def test_init(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         assert processor.data.equals(pd.DataFrame(self.data)) is True
 
     def test_drop_columns(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
         processed_data = processor.drop_columns()
 
         assert "A" not in processed_data.columns and "C" not in processed_data.columns
         assert "F" in processed_data.columns
 
     def test_onehot_encode_columns(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
         processed_data = processor.onehot_encode_columns()
 
         assert "B_3" in processed_data.columns and "B_4" in processed_data.columns
@@ -99,11 +72,10 @@ class TestDatasetProcessor:
         processor = create_dataset_processor(
             self.data,
             {
-                "path": "three_column.csv",
+                "path": "integer_data.csv",
                 "target": "F",
                 "labelEncode": ["D", "E"],
             },
-            self.data_path,
         )
         processed_data = processor.label_encode_columns()
 
@@ -121,11 +93,10 @@ class TestDatasetProcessor:
         processor = create_dataset_processor(
             self.data,
             {
-                "path": "three_column.csv",
+                "path": "integer_data.csv",
                 "target": "F",
                 "ordinalEncode": ["D", "E"],
             },
-            self.data_path,
         )
         processed_data = processor.ordinal_encode_columns()
 
@@ -140,11 +111,7 @@ class TestDatasetProcessor:
         )
 
     def test_drop_nan_no_missing_values(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
         processor.drop_nan()
 
     def test_drop_nan_empty_file(self):
@@ -154,13 +121,8 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "empty_data.csv"
 
-        processor = create_dataset_processor(
-            empty_data,
-            dataset_params,
-            dataset_path,
-        )
+        processor = create_dataset_processor(empty_data, dataset_params)
         processor.drop_nan()
 
     def test_drop_nan_none_value(self):
@@ -170,20 +132,9 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "none_data.csv"
 
-        processor1 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
-        processor2 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
+        processor1 = create_dataset_processor(none_data, dataset_params)
+        processor2 = create_dataset_processor(none_data, dataset_params)
         processor1.drop_nan()
 
         with pytest.raises(ValueError):
@@ -196,20 +147,9 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "none_data.csv"
 
-        processor1 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
-        processor2 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
+        processor1 = create_dataset_processor(none_data, dataset_params)
+        processor2 = create_dataset_processor(none_data, dataset_params)
         processor1.drop_nan()
 
         with pytest.raises(ValueError):
@@ -222,20 +162,9 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "none_data.csv"
 
-        processor1 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
-        processor2 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
+        processor1 = create_dataset_processor(none_data, dataset_params)
+        processor2 = create_dataset_processor(none_data, dataset_params)
         processor1.drop_nan()
 
         with pytest.raises(ValueError):
@@ -248,20 +177,9 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "none_data.csv"
 
-        processor1 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
-        processor2 = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
-
+        processor1 = create_dataset_processor(none_data, dataset_params)
+        processor2 = create_dataset_processor(none_data, dataset_params)
         processor1.drop_nan()
 
         with pytest.raises(ValueError):
@@ -274,23 +192,15 @@ class TestDatasetProcessor:
             "target": "A",
             "nan": "drop",
         }
-        dataset_path = "none_data.csv"
 
-        processor = create_dataset_processor(
-            none_data,
-            dataset_params,
-            dataset_path,
-        )
+        processor = create_dataset_processor(none_data, dataset_params)
         processor.drop_nan()
+
         assert "Missing values found in DataFrame" in caplog.text
 
-    def test_split_data(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
-        X_train, X_test, y_train, y_test = processor.split_data()
+    def test_split_target(self):
+        processor = create_dataset_processor(self.data, self.data_params)
+        X_train, X_test, y_train, y_test = processor.split_target()
 
         assert len(X_train) + len(X_test) == len(self.data["A"])
         assert len(y_train) + len(y_test) == len(self.data["F"])
@@ -299,22 +209,8 @@ class TestDatasetProcessor:
         assert isinstance(y_train, pd.Series)
         assert isinstance(y_test, pd.Series)
 
-    def test_split_data_invalid_test_size(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
-
-        with pytest.raises(ValueError):
-            processor.split_data(test_size=1.1)
-
     def test_save_data_parquet(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         try:
             processor.save_dataframe(save_directory="save_testing")
@@ -336,12 +232,8 @@ class TestDatasetProcessor:
         test2_path.mkdir(exist_ok=True)
 
         try:
-            processor1 = create_dataset_processor(
-                self.data, data_params1, "test1/name_test.csv"
-            )
-            processor2 = create_dataset_processor(
-                self.data, data_params2, "test2/name_test.csv"
-            )
+            processor1 = create_dataset_processor(self.data, data_params1)
+            processor2 = create_dataset_processor(self.data, data_params2)
 
             # Save the DataFrames to the same directory and check that they are saved with different names
             processor1.drop_columns()
@@ -357,11 +249,7 @@ class TestDatasetProcessor:
             shutil.rmtree("name_save_testing")
 
     def test_split_and_save_data(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         try:
             file_path = processor.split_and_save_data(save_directory="save_testing")
@@ -374,11 +262,7 @@ class TestDatasetProcessor:
             os.remove(file_path)
 
     def test_process_dataset(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         try:
             processor.process_dataset(save_directory="save_testing")
@@ -389,21 +273,13 @@ class TestDatasetProcessor:
             shutil.rmtree("save_testing")
 
     def test_process_dataset_invalid_save_original_type(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         with pytest.raises(ValueError):
             processor.process_dataset(save_directory="save_testing", save_original=123)
 
     def test_process_dataset_invalid_save_processed_type(self):
-        processor = create_dataset_processor(
-            self.data,
-            self.data_params,
-            self.data_path,
-        )
+        processor = create_dataset_processor(self.data, self.data_params)
 
         with pytest.raises(ValueError):
             processor.process_dataset(save_directory="save_testing", save_processed=123)
