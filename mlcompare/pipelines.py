@@ -11,6 +11,31 @@ from .params_reader import ParamsInput
 logger = logging.getLogger(__name__)
 
 
+def data_exploration_pipeline():
+    pass
+
+
+def data_pipeline(
+    dataset_params: ParamsInput,
+    save_original_data: bool = True,
+    save_cleaned_data: bool = True,
+    save_directory: str | Path = Path("pipeline_results"),
+) -> None:
+    """
+    A pipeline for data retrieval and/or processing without any model training or evaluation.
+    """
+    if isinstance(save_directory, str):
+        save_directory = Path(save_directory)
+    save_directory.mkdir(exist_ok=True)
+
+    process_datasets(
+        dataset_params,
+        save_directory,
+        save_original_data,
+        save_cleaned_data,
+    )
+
+
 def full_pipeline(
     dataset_params: ParamsInput,
     model_params: ParamsInput,
@@ -40,7 +65,3 @@ def full_pipeline(
     for data in split_data:
         process_models(model_params, data, save_directory)
         # pass custom models here ^^^
-
-
-def data_exploration_pipeline():
-    pass
