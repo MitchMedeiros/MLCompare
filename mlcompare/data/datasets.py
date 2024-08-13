@@ -72,9 +72,9 @@ class BaseDataset(ABC, BaseModel):
     save_name: str | None = Field(None, alias="saveName")
     drop: list[str] | None = None
     nan: Literal["ffill", "bfill", "drop"] | None = None
+    ordinal_encode: list[str] | None = Field(None, alias="ordinalEncode")
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
     label_encode: Literal["yes"] | None = Field(None, alias="labelEncode")
-    ordinal_encode: list[str] | None = Field(None, alias="ordinalEncode")
 
     @abstractmethod
     def model_post_init(self, Any) -> None: ...

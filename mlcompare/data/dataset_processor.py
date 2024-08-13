@@ -89,11 +89,17 @@ class DatasetProcessor:
         if test_size <= 0 or test_size >= 1:
             raise ValueError("`test_size` must be between 0 and 1.")
 
-        X, y = train_test_split(self.data, test_size=test_size, random_state=0)
+        try:
+            X, y = train_test_split(self.data, test_size=test_size, random_state=0)
 
-        logger.info(f"Data successfully split: {X.shape=}, {y.shape=}")
-        self.train_data = X
-        self.test_data = y
+            logger.info(f"Data successfully split: {X.shape=}, {y.shape=}")
+            self.train_data = X
+            self.test_data = y
+        except ValueError:
+            logger.error(
+                "Could not split the dataset into train and set sets since it is empty."
+            )
+            raise
 
     def drop_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
@@ -170,14 +176,13 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns dropped.
         """
         if self.drop:
-            train_df = self.train_data.drop(self.drop, axis=1)
-            test_df = self.test_data.drop(self.drop, axis=1)
+            self.train_data = self.train_data.drop(self.drop, axis=1)
+            self.test_data = self.test_data.drop(self.drop, axis=1)
 
             logger.info(
-                f"Columns: {self.drop} successfully dropped:\n{train_df.head(3)}"
+                f"Columns: {self.drop} successfully dropped. Training split:\n{self.train_data.head(3)}"
             )
-            self.train_data = train_df
-            self.test_data = test_df
+
         return self.train_data, self.test_data
 
     def onehot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -190,20 +195,22 @@ class DatasetProcessor:
         """
         if self.onehot_encode:
             encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
+            encoded_train_columns = encoder.fit_transform(
+                self.train_data[self.onehot_encode]
+            )
+            encoded_test_columns = encoder.transform(self.test_data[self.onehot_encode])
 
-            train_df = self.train_data
-            encoded_train_df = encoder.fit_transform(train_df[self.onehot_encode])
-            train_df = train_df.drop(self.onehot_encode, axis=1).join(encoded_train_df)
-
-            test_df = self.test_data
-            encoded_test_df = encoder.transform(test_df[self.onehot_encode])
-            test_df = test_df.drop(self.onehot_encode, axis=1).join(encoded_test_df)
+            self.train_data = self.train_data.drop(self.onehot_encode, axis=1).join(
+                encoded_train_columns
+            )
+            self.test_data = self.test_data.drop(self.onehot_encode, axis=1).join(
+                encoded_test_columns
+            )
 
             logger.info(
-                f"Columns: {self.onehot_encode} successfully one-hot encoded:\n{train_df.head(3)}"
+                f"Columns: {self.onehot_encode} successfully one-hot encoded. Training split:\n{self.train_data.head(3)}"
             )
-            self.train_data = train_df
-            self.test_data = test_df
+
         return self.train_data, self.test_data
 
     def ordinal_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -218,20 +225,17 @@ class DatasetProcessor:
             encoder = OrdinalEncoder(
                 handle_unknown="use_encoded_value", unknown_value=-1
             )
-
-            train_df = self.train_data
-            encoded_train_df = encoder.fit_transform(train_df[self.ordinal_encode])
-            train_df = train_df.drop(self.ordinal_encode, axis=1).join(encoded_train_df)
-
-            test_df = self.test_data
-            encoded_test_df = encoder.transform(test_df[self.ordinal_encode])
-            test_df = test_df.drop(self.ordinal_encode, axis=1).join(encoded_test_df)
+            self.train_data[self.ordinal_encode] = encoder.fit_transform(
+                self.train_data[self.ordinal_encode]
+            )
+            self.test_data[self.ordinal_encode] = encoder.transform(
+                self.test_data[self.ordinal_encode]
+            )
 
             logger.info(
-                f"Columns: {self.ordinal_encode} successfully ordinal encoded:\n{train_df.head(3)}"
+                f"Columns: {self.ordinal_encode} successfully ordinal encoded. Training split:\n{self.train_data.head(3)}"
             )
-            self.train_data = train_df
-            self.test_data = test_df
+
         return self.train_data, self.test_data
 
     def label_encode_column(self) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -243,18 +247,27 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns replaced with label encoded columns.
         """
         if self.label_encode:
-            encoder = LabelEncoder()
+            train_df = self.train_data.copy()
+            test_df = self.test_data.copy()
 
-            train_df = self.train_data
-            encoded_train_df = encoder.fit_transform(train_df.pop(self.target))
-            train_df = train_df.join(encoded_train_df)
+            try:
+                encoder = LabelEncoder()
+                train_df[self.target] = encoder.fit_transform(train_df[self.target])
+                test_df[self.target] = encoder.transform(test_df[self.target])
+            except ValueError:
+                logger.warning(
+                    """Labels are present in the generated test split that are not present in the training split. 
+                    To resolve this, the label encoder will be fit on the entire dataset. Note that this introduces data leakage 
+                    and may negatively effect reliability of the results. Consider using a larger dataset to address this."""
+                )
+                combined_df = pd.concat([train_df, test_df])
 
-            test_df = self.test_data
-            encoded_test_df = encoder.transform(test_df.pop(self.target))
-            test_df = test_df.join(encoded_test_df)
+                encoder.fit(combined_df[self.target])
+                train_df[self.target] = encoder.transform(train_df[self.target])
+                test_df[self.target] = encoder.transform(test_df[self.target])
 
             logger.info(
-                f"Target: {self.target} successfully label encoded:\n{train_df.head(3)}"
+                f"Target: {self.target} successfully label encoded. Training split:\n{train_df.head(3)}"
             )
             self.train_data = train_df
             self.test_data = test_df
