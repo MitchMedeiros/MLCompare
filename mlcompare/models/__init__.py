@@ -1,6 +1,7 @@
 from .models import (
     LibraryModel,
     ModelFactory,
+    PyTorchModel,
     SklearnModel,
     XGBoostModel,
     append_json,
@@ -13,6 +14,7 @@ __all__ = [
     "ModelFactory",
     "SklearnModel",
     "XGBoostModel",
+    "PyTorchModel",
     "append_json",
     "evaluate_prediction",
     "process_models",

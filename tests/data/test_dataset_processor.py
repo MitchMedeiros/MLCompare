@@ -119,6 +119,24 @@ class TestDatasetProcessor:
         assert len(test_data["D"]) == 1
         assert len(test_data["E"]) == 1
 
+    def test_target_encode_column(self):
+        processor = create_dataset_processor(
+            {
+                "A": [1, 2, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+                "B": [3, 4, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+                "C": [5, 6, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+                "D": [7, 13, 16, 18, 20, 10, 16, 10, 8, 8, 8, 8],
+                "E": [9, 10, 11, 12, 42, 14, 11, 40, 8, 8, 8, 8],
+                "F": [11, 11, 13, 13, 11, 11, 13, 13, 11, 13, 11, 13],
+            },
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "targetEncode": ["D"],
+            },
+        )
+        train_data, test_data = processor.target_encode_columns()
+
     def test_label_encode_column(self):
         processor = create_dataset_processor(
             self.data,

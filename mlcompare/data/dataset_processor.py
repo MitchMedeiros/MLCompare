@@ -14,6 +14,7 @@ from sklearn.preprocessing import (
     OneHotEncoder,
     OrdinalEncoder,
     StandardScaler,
+    TargetEncoder,
 )
 
 from ..params_reader import ParamsInput
@@ -74,8 +75,9 @@ class DatasetProcessor:
         self.drop = dataset.drop
         self.nan = dataset.nan
         self.onehot_encode = dataset.onehot_encode
-        self.label_encode = dataset.label_encode
         self.ordinal_encode = dataset.ordinal_encode
+        self.target_encode = dataset.target_encode
+        self.label_encode = dataset.label_encode
 
         self.train_test_split()
 
@@ -222,6 +224,27 @@ class DatasetProcessor:
 
             logger.info(
                 f"Columns: {self.ordinal_encode} successfully ordinal encoded. Training split:\n{self.train_data.head(3)}"
+            )
+
+        return self.train_data, self.test_data
+
+    def target_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Target encodes the specified columns and replaces them in the DataFrame.
+
+        Returns:
+        --------
+            pd.DataFrame: DataFrame with the specified columns replaced with target encoded columns.
+        """
+        if self.target_encode:
+            encoder = TargetEncoder(random_state=1, cv=3)
+            self.train_data[self.target_encode] = encoder.fit_transform(
+                self.train_data[self.target_encode], self.train_data[self.target]
+            )
+            self.test_data[self.target_encode] = encoder.transform(self.test_data[self.target_encode])
+
+            logger.info(
+                f"Columns: {self.target_encode} successfully target encoded. Training split:\n{self.train_data.head(3)}"
             )
 
         return self.train_data, self.test_data
