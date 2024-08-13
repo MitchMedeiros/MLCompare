@@ -50,44 +50,52 @@ class TestDatasetProcessor:
         processor = create_dataset_processor(self.data, self.data_params)
 
         assert processor.data.equals(pd.DataFrame(self.data)) is True
+        assert (
+            pd.concat([processor.train_data, processor.test_data])
+            .sort_index()
+            .equals(processor.data)
+            is True
+        )
+
+    def test_init_empty_file(self):
+        empty_data = {"A": [], "B": []}
+        dataset_params = {
+            "path": "empty_data.csv",
+            "target": "A",
+            "nan": "drop",
+        }
+
+        with pytest.raises(ValueError):
+            create_dataset_processor(empty_data, dataset_params)
 
     def test_drop_columns(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        processed_data = processor.drop_columns()
+        train_data, test_data = processor.drop_columns()
 
-        assert "A" not in processed_data.columns and "C" not in processed_data.columns
-        assert "F" in processed_data.columns
+        assert "A" not in train_data.columns and "C" not in train_data.columns
+        assert "A" not in test_data.columns and "C" not in test_data.columns
+        assert "F" in train_data.columns
+        assert "F" in test_data.columns
 
     def test_onehot_encode_columns(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        processed_data = processor.onehot_encode_columns()
+        train_data, test_data = processor.onehot_encode_columns()
 
-        assert "B_3" in processed_data.columns and "B_4" in processed_data.columns
-        assert "B" not in processed_data.columns
-        assert "D" not in processed_data.columns
-        assert processed_data["B_3"].sum() == 1
-        assert processed_data["B_4"].sum() == 1
-
-    def test_label_encode_columns(self):
-        processor = create_dataset_processor(
-            self.data,
-            {
-                "path": "integer_data.csv",
-                "target": "F",
-                "labelEncode": ["D", "E"],
-            },
-        )
-        processed_data = processor.label_encode_columns()
-
-        assert "D" in processed_data.columns and "E" in processed_data.columns
+        assert "B" not in train_data.columns
+        assert "B" not in test_data.columns
+        assert "D" not in train_data.columns
+        assert "D" not in test_data.columns
         assert (
-            processed_data["D"].sum()
-            == len(processor.data["D"]) * (len(processor.data["D"]) - 1) / 2
+            "B_3" in train_data.columns
+            or "B_3" in test_data.columns
+            or "B_4" in train_data.columns
+            or "B_4" in test_data.columns
         )
-        assert (
-            processed_data["E"].sum()
-            == len(processor.data["E"]) * (len(processor.data["E"]) - 1) / 2
-        )
+
+        if "B_3" in train_data.columns:
+            assert train_data["B_3"].sum() == 1
+        else:
+            assert test_data["B_3"].sum() == 1
 
     def test_ordinal_encode_columns(self):
         processor = create_dataset_processor(
@@ -98,31 +106,40 @@ class TestDatasetProcessor:
                 "ordinalEncode": ["D", "E"],
             },
         )
-        processed_data = processor.ordinal_encode_columns()
+        train_data, test_data = processor.ordinal_encode_columns()
 
-        assert "D" in processed_data.columns and "E" in processed_data.columns
+        assert "D" in train_data.columns and "E" in train_data.columns
+        assert "D" in test_data.columns and "E" in test_data.columns
         assert (
-            processed_data["D"].sum()
-            == len(processor.data["D"]) * (len(processor.data["D"]) - 1) / 2
+            train_data["D"].sum()
+            == len(processor.train_data["D"]) * (len(processor.train_data["D"]) - 1) / 2
         )
         assert (
-            processed_data["E"].sum()
-            == len(processor.data["E"]) * (len(processor.data["E"]) - 1) / 2
+            train_data["E"].sum()
+            == len(processor.train_data["E"]) * (len(processor.train_data["E"]) - 1) / 2
+        )
+        assert len(test_data["D"]) == 1
+        assert len(test_data["E"]) == 1
+
+    def test_label_encode_column(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "labelEncode": "yes",
+            },
+        )
+        train_data, test_data = processor.label_encode_column()
+
+        assert "F" in train_data.columns and "F" in test_data.columns
+        assert (
+            train_data["F"].sum()
+            == len(processor.train_data["F"]) * (len(processor.train_data["F"]) - 1) / 2
         )
 
     def test_drop_nan_no_missing_values(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        processor.drop_nan()
-
-    def test_drop_nan_empty_file(self):
-        empty_data = {"A": [], "B": []}
-        dataset_params = {
-            "path": "empty_data.csv",
-            "target": "A",
-            "nan": "drop",
-        }
-
-        processor = create_dataset_processor(empty_data, dataset_params)
         processor.drop_nan()
 
     def test_drop_nan_none_value(self):
@@ -214,9 +231,9 @@ class TestDatasetProcessor:
 
         try:
             processor.save_dataframe(save_directory="save_testing")
-            assert Path("save_testing/three_column.parquet").exists()
+            assert Path("save_testing/integer_data.parquet").exists()
 
-            df = pd.read_parquet("save_testing/three_column.parquet")
+            df = pd.read_parquet("save_testing/integer_data.parquet")
             assert df.equals(pd.DataFrame(self.data)) is True
         finally:
             shutil.rmtree("save_testing")
@@ -267,8 +284,8 @@ class TestDatasetProcessor:
         try:
             processor.process_dataset(save_directory="save_testing")
 
-            assert Path("save_testing/three_column-original.parquet").exists()
-            assert Path("save_testing/three_column-processed.parquet").exists()
+            assert Path("save_testing/integer_data-original.parquet").exists()
+            assert Path("save_testing/integer_data-processed.parquet").exists()
         finally:
             shutil.rmtree("save_testing")
 
