@@ -101,7 +101,7 @@ class DatasetProcessor:
             )
             raise
 
-    def drop_nan(self, raise_exception: bool = False) -> pd.DataFrame:
+    def handle_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
         Checks for missing values: NaN, "", and "." in the DataFrame and either forward-fills, backwards-fills, drops them,
         or simply logs how many exist. Raises an exception instead is `raise_exception`=True.
@@ -138,7 +138,7 @@ class DatasetProcessor:
                 )
                 if raise_exception:
                     raise ValueError(
-                        "Missing values found in DataFrame. Set `raise_exception=False` for `DatasetProcessor.drop_nan()` "
+                        "Missing values found in DataFrame. Set `raise_exception=False` for `DatasetProcessor.handle_nan()` "
                         "to continue processing anyways."
                     )
                 else:
@@ -159,7 +159,7 @@ class DatasetProcessor:
 
                     assert (
                         bool(df.isna().values.any()) is False
-                    ), "drop_nan failed to remove all NaN values."
+                    ), "handle_nan failed to remove all NaN values."
                     logger.info(
                         f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
                     )
@@ -256,9 +256,9 @@ class DatasetProcessor:
                 test_df[self.target] = encoder.transform(test_df[self.target])
             except ValueError:
                 logger.warning(
-                    """Labels are present in the generated test split that are not present in the training split. 
-                    To resolve this, the label encoder will be fit on the entire dataset. Note that this introduces data leakage 
-                    and may negatively effect reliability of the results. Consider using a larger dataset to address this."""
+                    "Labels are present in the generated test split that are not present in the training split and, therefore, cannot be fit. \n"
+                    "To resolve this, the label encoder will be fit on the entire dataset. This introduces data-leakage and may negatively impact the reliability of the results. \n"
+                    "Consider using a larger dataset to address this."
                 )
                 combined_df = pd.concat([train_df, test_df])
 
@@ -426,7 +426,7 @@ class DatasetProcessor:
             )
 
         self.drop_columns()
-        self.drop_nan()
+        self.handle_nan()
         self.onehot_encode_columns()
         self.ordinal_encode_columns()
         self.label_encode_column()

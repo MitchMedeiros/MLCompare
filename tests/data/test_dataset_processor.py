@@ -138,11 +138,11 @@ class TestDatasetProcessor:
             == len(processor.train_data["F"]) * (len(processor.train_data["F"]) - 1) / 2
         )
 
-    def test_drop_nan_no_missing_values(self):
+    def test_handle_nan_no_missing_values(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        processor.drop_nan()
+        processor.handle_nan()
 
-    def test_drop_nan_none_value(self):
+    def test_handle_nan_none_value(self):
         none_data = {"A": [1, 2, None], "B": ["value1", "value2", "value3"]}
         dataset_params = {
             "path": "none_data.csv",
@@ -152,12 +152,12 @@ class TestDatasetProcessor:
 
         processor1 = create_dataset_processor(none_data, dataset_params)
         processor2 = create_dataset_processor(none_data, dataset_params)
-        processor1.drop_nan()
+        processor1.handle_nan()
 
         with pytest.raises(ValueError):
-            processor2.drop_nan(raise_exception=True)
+            processor2.handle_nan(raise_exception=True)
 
-    def test_drop_nan_empty_strings(self):
+    def test_handle_nan_empty_strings(self):
         none_data = {"A": [1, 2, 3], "B": ["", "value", "value"]}
         dataset_params = {
             "path": "none_data.csv",
@@ -167,12 +167,12 @@ class TestDatasetProcessor:
 
         processor1 = create_dataset_processor(none_data, dataset_params)
         processor2 = create_dataset_processor(none_data, dataset_params)
-        processor1.drop_nan()
+        processor1.handle_nan()
 
         with pytest.raises(ValueError):
-            processor2.drop_nan(raise_exception=True)
+            processor2.handle_nan(raise_exception=True)
 
-    def test_drop_nan_dot_values(self):
+    def test_handle_nan_dot_values(self):
         none_data = {"A": [1, 2, 3], "B": ["value", ".", "value"]}
         dataset_params = {
             "path": "none_data.csv",
@@ -182,10 +182,10 @@ class TestDatasetProcessor:
 
         processor1 = create_dataset_processor(none_data, dataset_params)
         processor2 = create_dataset_processor(none_data, dataset_params)
-        processor1.drop_nan()
+        processor1.handle_nan()
 
         with pytest.raises(ValueError):
-            processor2.drop_nan(raise_exception=True)
+            processor2.handle_nan(raise_exception=True)
 
     def test_multiple_missing_value_types(self):
         none_data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
@@ -197,12 +197,12 @@ class TestDatasetProcessor:
 
         processor1 = create_dataset_processor(none_data, dataset_params)
         processor2 = create_dataset_processor(none_data, dataset_params)
-        processor1.drop_nan()
+        processor1.handle_nan()
 
         with pytest.raises(ValueError):
-            processor2.drop_nan(raise_exception=True)
+            processor2.handle_nan(raise_exception=True)
 
-    def test_drop_nan_logging(self, caplog):
+    def test_handle_nan_logging(self, caplog):
         none_data = {"A": [1, 2, None], "B": ["", 3.5, "."], "C": [True, False, None]}
         dataset_params = {
             "path": "none_data.csv",
@@ -211,7 +211,7 @@ class TestDatasetProcessor:
         }
 
         processor = create_dataset_processor(none_data, dataset_params)
-        processor.drop_nan()
+        processor.handle_nan()
 
         assert "Missing values found in DataFrame" in caplog.text
 
