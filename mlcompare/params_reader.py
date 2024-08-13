@@ -45,7 +45,7 @@ class ParamsReader:
         if isinstance(params_list, Path):
             params_list = ParamsReader._load_params_from_file(params_list)
 
-        ParamsReader._validate_params_list_type(params_list)
+        ParamsReader._validate_params_list(params_list)
         return params_list
 
     @staticmethod
@@ -80,7 +80,7 @@ class ParamsReader:
             raise
 
     @staticmethod
-    def _validate_params_list_type(params_list: Any) -> None:
+    def _validate_params_list(params_list: list[dict[str, Any]]) -> None:
         assert isinstance(
             params_list, list
         ), "`params_list` must be a list of dictionaries or a path to .json file containing one."
@@ -88,3 +88,28 @@ class ParamsReader:
         assert all(
             isinstance(params, dict) for params in params_list
         ), "Each list element of `params_list` must be a dictionary."
+
+        for params in params_list:
+            onehot_encode = set(params.get("onehotEncode", []))
+            target_encode = set(params.get("targetEncode", []))
+            ordinal_encode = set(params.get("ordinalEncode", []))
+
+            overlap_onehot_target = onehot_encode.intersection(target_encode)
+            overlap_onehot_ordinal = onehot_encode.intersection(ordinal_encode)
+            overlap_target_ordinal = target_encode.intersection(ordinal_encode)
+
+            if overlap_onehot_target:
+                raise ValueError(
+                    f"Columns: {overlap_onehot_target} are listed in both 'targetEncode' and 'onehotEncode' for "
+                    "one of the datasets."
+                )
+            if overlap_onehot_ordinal:
+                raise ValueError(
+                    f"Columns: {overlap_onehot_ordinal} are listed in both 'ordinalEncode' and 'onehotEncode' for "
+                    "one of the datasets."
+                )
+            if overlap_target_ordinal:
+                raise ValueError(
+                    f"Columns: {overlap_target_ordinal} are listed in both 'targetEncode' and 'ordinalEncode' for "
+                    "one of the datasets."
+                )

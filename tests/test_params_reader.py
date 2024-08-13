@@ -66,3 +66,16 @@ class TestParamsReader:
         non_json_path.write("param1,param2\nvalue1,value2")
         with pytest.raises(json.JSONDecodeError):
             ParamsReader.read(str(non_json_path))
+
+    def test_repeated_encode_column(self):
+        repeated_encoding_column = [
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "ordinalEncode": ["D", "E"],
+                "targetEncode": ["D"],
+            },
+        ]
+
+        with pytest.raises(ValueError):
+            ParamsReader.read(repeated_encoding_column)
