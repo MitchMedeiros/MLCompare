@@ -6,8 +6,15 @@ from pathlib import Path
 from typing import Generator, Literal
 
 import pandas as pd
+import sklearn
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder
+from sklearn.preprocessing import (
+    LabelEncoder,
+    MinMaxScaler,
+    OneHotEncoder,
+    OrdinalEncoder,
+    StandardScaler,
+)
 
 from ..params_reader import ParamsInput
 from .datasets import (
@@ -21,6 +28,30 @@ from .datasets import (
 from .split_data import SplitData, SplitDataTuple
 
 logger = logging.getLogger(__name__)
+
+sklearn.set_config(transform_output="pandas")
+
+
+def validate_save_directory(save_directory: Path | str) -> Path:
+    """
+    Validates the existence of a directory and creates one if it doesn't exist.
+
+    Args:
+    -----
+        save_directory (Path | str): Directory to save files to.
+
+    Returns:
+    --------
+        Path: Path to the directory.
+    """
+    if not isinstance(save_directory, (Path)):
+        if not isinstance(save_directory, str):
+            raise ValueError("`save_directory` must be a string or Path object.")
+        else:
+            save_directory = Path(save_directory)
+
+    save_directory.mkdir(exist_ok=True)
+    return save_directory
 
 
 class DatasetProcessor:
@@ -46,6 +77,23 @@ class DatasetProcessor:
         self.onehot_encode = dataset.onehot_encode
         self.label_encode = dataset.label_encode
         self.ordinal_encode = dataset.ordinal_encode
+
+        self.train_test_split()
+
+    def train_test_split(self, test_size: float = 0.2) -> None:
+        """
+        Splits the data into training and testing sets. A wrapper around scikit-learn's `train_test_split` function.
+        """
+        if not isinstance(test_size, float):
+            raise ValueError("`test_size` must be a float.")
+        if test_size <= 0 or test_size >= 1:
+            raise ValueError("`test_size` must be between 0 and 1.")
+
+        X, y = train_test_split(self.data, test_size=test_size, random_state=0)
+
+        logger.info(f"Data successfully split: {X.shape=}, {y.shape=}")
+        self.train_data = X
+        self.test_data = y
 
     def drop_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
@@ -113,7 +161,7 @@ class DatasetProcessor:
 
         return self.data
 
-    def drop_columns(self) -> pd.DataFrame:
+    def drop_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Drops the specified columns from the DataFrame.
 
@@ -122,12 +170,17 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns dropped.
         """
         if self.drop:
-            df = self.data.drop(self.drop, axis=1)
-            logger.info(f"Columns: {self.drop} successfully dropped:\n{df.head(3)}")
-            self.data = df
-        return self.data
+            train_df = self.train_data.drop(self.drop, axis=1)
+            test_df = self.test_data.drop(self.drop, axis=1)
 
-    def onehot_encode_columns(self) -> pd.DataFrame:
+            logger.info(
+                f"Columns: {self.drop} successfully dropped:\n{train_df.head(3)}"
+            )
+            self.train_data = train_df
+            self.test_data = test_df
+        return self.train_data, self.test_data
+
+    def onehot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         One-hot encodes the specified columns and replaces them in the DataFrame.
 
@@ -136,47 +189,24 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns replaced with one-hot encoded columns.
         """
         if self.onehot_encode:
-            df = self.data
-            encoder = OneHotEncoder(sparse_output=False)
-            encoded_array = encoder.fit_transform(df[self.onehot_encode])
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
 
-            encoded_columns_df = pd.DataFrame(
-                encoded_array,
-                columns=encoder.get_feature_names_out(self.onehot_encode),
-            )
+            train_df = self.train_data
+            encoded_train_df = encoder.fit_transform(train_df[self.onehot_encode])
+            train_df = train_df.drop(self.onehot_encode, axis=1).join(encoded_train_df)
 
-            df = df.drop(columns=self.onehot_encode).join(encoded_columns_df)
-            logger.info(
-                f"Columns: {self.onehot_encode} successfully one-hot encoded:\n{df.head(3)}"
-            )
-            self.data = df
-        return self.data
-
-    def label_encode_columns(self) -> pd.DataFrame:
-        """
-        Label encodes the specified columns and replaces them in the DataFrame.
-
-        Returns:
-        --------
-            pd.DataFrame: DataFrame with the specified columns replaced with label encoded columns.
-        """
-        if self.label_encode:
-            df = self.data
-
-            for column in self.label_encode:
-                encoder = LabelEncoder()
-                encoded_array = encoder.fit_transform(df[column])
-
-                encoded_column_df = pd.DataFrame(encoded_array, columns=[column])
-                df = df.drop(columns=[column]).join(encoded_column_df)
+            test_df = self.test_data
+            encoded_test_df = encoder.transform(test_df[self.onehot_encode])
+            test_df = test_df.drop(self.onehot_encode, axis=1).join(encoded_test_df)
 
             logger.info(
-                f"Columns: {self.label_encode} successfully label encoded:\n{df.head(3)}"
+                f"Columns: {self.onehot_encode} successfully one-hot encoded:\n{train_df.head(3)}"
             )
-            self.data = df
-        return self.data
+            self.train_data = train_df
+            self.test_data = test_df
+        return self.train_data, self.test_data
 
-    def ordinal_encode_columns(self) -> pd.DataFrame:
+    def ordinal_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Ordinal encodes the specified columns and replaces them in the DataFrame.
 
@@ -185,20 +215,50 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns replaced with ordinal encoded columns.
         """
         if self.ordinal_encode:
-            df = self.data
+            encoder = OrdinalEncoder(
+                handle_unknown="use_encoded_value", unknown_value=-1
+            )
 
-            for column in self.ordinal_encode:
-                encoder = OrdinalEncoder()
-                encoded_array = encoder.fit_transform(df[[column]])
+            train_df = self.train_data
+            encoded_train_df = encoder.fit_transform(train_df[self.ordinal_encode])
+            train_df = train_df.drop(self.ordinal_encode, axis=1).join(encoded_train_df)
 
-                encoded_column_df = pd.DataFrame(encoded_array, columns=[column])
-                df = df.drop(columns=[column]).join(encoded_column_df)
+            test_df = self.test_data
+            encoded_test_df = encoder.transform(test_df[self.ordinal_encode])
+            test_df = test_df.drop(self.ordinal_encode, axis=1).join(encoded_test_df)
 
             logger.info(
-                f"Columns: {self.ordinal_encode} successfully ordinal encoded:\n{df.head(3)}"
+                f"Columns: {self.ordinal_encode} successfully ordinal encoded:\n{train_df.head(3)}"
             )
-            self.data = df
-        return self.data
+            self.train_data = train_df
+            self.test_data = test_df
+        return self.train_data, self.test_data
+
+    def label_encode_column(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Label encodes the specified columns and replaces them in the DataFrame.
+
+        Returns:
+        --------
+            pd.DataFrame: DataFrame with the specified columns replaced with label encoded columns.
+        """
+        if self.label_encode:
+            encoder = LabelEncoder()
+
+            train_df = self.train_data
+            encoded_train_df = encoder.fit_transform(train_df.pop(self.target))
+            train_df = train_df.join(encoded_train_df)
+
+            test_df = self.test_data
+            encoded_test_df = encoder.transform(test_df.pop(self.target))
+            test_df = test_df.join(encoded_test_df)
+
+            logger.info(
+                f"Target: {self.target} successfully label encoded:\n{train_df.head(3)}"
+            )
+            self.train_data = train_df
+            self.test_data = test_df
+        return self.train_data, self.test_data
 
     def save_dataframe(
         self,
@@ -256,7 +316,7 @@ class DatasetProcessor:
 
         return file_path
 
-    def split_data(self, test_size: float = 0.2) -> SplitDataTuple:
+    def split_target(self) -> SplitDataTuple:
         """
         Separates the target column from the features and splits both into training and testing sets
         using scikit-learn's `train_test_split` function.
@@ -268,43 +328,36 @@ class DatasetProcessor:
         Returns:
         --------
             SplitDataTuple:
-                X_train (pd.DataFrame): Training data for features.
-                X_test (pd.DataFrame): Testing data for features.
-                y_train (pd.DataFrame | pd.Series): Training data for target variable(s).
-                y_test (pd.DataFrame | pd.Series): Testing data for target variable(s).
+                pd.DataFrame: Training data for features.
+                pd.DataFrame: Testing data for features.
+                pd.DataFrame | pd.Series: Training data for target variable.
+                pd.DataFrame | pd.Series: Testing data for target variable.
         """
-        if not isinstance(test_size, float):
-            raise ValueError("`test_size` must be a float.")
-        if test_size <= 0 or test_size >= 1:
-            raise ValueError("`test_size` must be between 0 and 1.")
+        X_train = self.train_data
+        y_train = X_train.pop(self.target)
 
-        X = self.data.drop(columns=self.target)
-        y = self.data[self.target]
+        X_test = self.test_data
+        y_test = X_test.pop(self.target)
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=0
-        )
         logger.info(
-            f"Data successfully split: {X_train.shape=}, {X_test.shape=}, {y_train.shape=}, {y_test.shape=}"
+            f"Target successfully split from training and testing data: {X_train.shape=}, {X_test.shape=}, "
+            f"{y_train.shape=}, {y_test.shape=}"
         )
         return X_train, X_test, y_train, y_test
 
-    def split_and_save_data(
-        self, save_directory: Path | str, test_size: float = 0.2
-    ) -> Path:
+    def split_and_save_data(self, save_directory: Path | str) -> Path:
         """
         Splits the data and saves it to a single pickle file as a SplitData object.
 
         Args:
         -----
             save_directory (Path | str): Directory to save the SplitData object to.
-            test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
 
         Returns:
         --------
             Path: Path to the saved SplitData object.
         """
-        X_train, X_test, y_train, y_test = self.split_data(test_size=test_size)
+        X_train, X_test, y_train, y_test = self.split_target()
         split_data_obj = SplitData(
             X_train=X_train,
             X_test=X_test,
@@ -344,10 +397,10 @@ class DatasetProcessor:
         Returns:
         --------
             SplitDataTuple:
-                X_train (pd.DataFrame): Training data for features.
-                X_test (pd.DataFrame): Testing data for features.
-                y_train (pd.DataFrame | pd.Series): Training data for target variable(s).
-                y_test (pd.DataFrame | pd.Series): Testing data for target variable(s).
+                pd.DataFrame: Training data for features.
+                pd.DataFrame: Testing data for features.
+                pd.DataFrame | pd.Series: Training data for target variable.
+                pd.DataFrame | pd.Series: Testing data for target variable.
         """
         if not isinstance(save_original, bool):
             raise ValueError("`save_original` must be a boolean.")
@@ -362,13 +415,15 @@ class DatasetProcessor:
         self.drop_columns()
         self.drop_nan()
         self.onehot_encode_columns()
+        self.ordinal_encode_columns()
+        self.label_encode_column()
 
         if save_processed:
             self.save_dataframe(
                 save_directory=save_directory, file_name_ending="-processed"
             )
 
-        return self.split_data()
+        return self.split_target()
 
 
 def process_datasets(
@@ -457,25 +512,3 @@ def process_datasets_to_files(
         logger.info(f"Split data saved to: {file_path}")
 
     return split_data_paths
-
-
-def validate_save_directory(save_directory: Path | str) -> Path:
-    """
-    Validates the save directory and creates it if it does not exist.
-
-    Args:
-    -----
-        save_directory (Path | str): Directory to save files to.
-
-    Returns:
-    --------
-        Path: Path to the directory.
-    """
-    if not isinstance(save_directory, (Path)):
-        if not isinstance(save_directory, str):
-            raise ValueError("`save_directory` must be a string or Path object.")
-        else:
-            save_directory = Path(save_directory)
-
-    save_directory.mkdir(exist_ok=True)
-    return save_directory

@@ -73,7 +73,7 @@ class BaseDataset(ABC, BaseModel):
     drop: list[str] | None = None
     nan: Literal["ffill", "bfill", "drop"] | None = None
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
-    label_encode: list[str] | None = Field(None, alias="labelEncode")
+    label_encode: Literal["yes"] | None = Field(None, alias="labelEncode")
     ordinal_encode: list[str] | None = Field(None, alias="ordinalEncode")
 
     @abstractmethod
