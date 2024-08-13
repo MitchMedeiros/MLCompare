@@ -11,10 +11,7 @@ from pydantic import BaseModel, ConfigDict
 logger = logging.getLogger(__name__)
 
 SplitDataTuple: TypeAlias = tuple[
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame | pd.Series,
-    pd.DataFrame | pd.Series,
+    pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series
 ]
 """Data for training and testing."""
 

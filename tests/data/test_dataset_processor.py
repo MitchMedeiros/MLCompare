@@ -51,9 +51,7 @@ class TestDatasetProcessor:
 
         assert processor.data.equals(pd.DataFrame(self.data)) is True
         assert (
-            pd.concat([processor.train_data, processor.test_data])
-            .sort_index()
-            .equals(processor.data)
+            pd.concat([processor.train_data, processor.test_data]).sort_index().equals(processor.data)
             is True
         )
 

@@ -59,11 +59,7 @@ def test_df_from_suffix_unsupported_file_type():
 class TestBaseDataset:
     def test_init(self):
         with pytest.raises(TypeError):
-            BaseDataset(
-                target="target",
-                drop=["col1"],
-                onehotEncode=["col2"],
-            )
+            BaseDataset(target="target", drop=["col1"], onehotEncode=["col2"])
 
 
 # Minimal implementation of BaseDataset for testing
@@ -81,10 +77,7 @@ class BaseDatasetChild(BaseDataset):
 class TestBaseDatasetChild:
     def test_init(self):
         dummy_dataset = BaseDatasetChild(
-            target="target",
-            saveName="dummy_dataset",
-            drop=["col1"],
-            onehotEncode=["col2", "col3"],
+            target="target", saveName="dummy_dataset", drop=["col1"], onehotEncode=["col2", "col3"]
         )
 
         assert dummy_dataset.target == "target"
@@ -93,9 +86,7 @@ class TestBaseDatasetChild:
         assert dummy_dataset.onehot_encode == ["col2", "col3"]
 
     def test_no_optional_columns(self):
-        dummy_dataset = BaseDatasetChild(
-            target="target",
-        )
+        dummy_dataset = BaseDatasetChild(target="target")
 
         assert dummy_dataset.target == "target"
         assert dummy_dataset.drop is None
@@ -112,24 +103,15 @@ class TestBaseDatasetChild:
 
     def test_invalid_save_name_type(self):
         with pytest.raises(ValidationError):
-            BaseDatasetChild(
-                target="target",
-                saveName=123,
-            )
+            BaseDatasetChild(target="target", saveName=123)
 
     def test_invalid_drop_type(self):
         with pytest.raises(ValidationError):
-            BaseDatasetChild(
-                target="target",
-                drop="123",
-            )
+            BaseDatasetChild(target="target", drop="123")
 
     def test_invalid_onehot_encode_type(self):
         with pytest.raises(ValidationError):
-            BaseDatasetChild(
-                target="target",
-                onehotEncode="123",
-            )
+            BaseDatasetChild(target="target", onehotEncode="123")
 
 
 # Currently the `validate_data` and `create_save_name` methods are run at initialization
@@ -153,55 +135,34 @@ class TestLocalDataset:
         assert dataset.onehot_encode == ["col3"]
 
     def test_init_with_str_path(self):
-        dataset = LocalDataset(
-            path="local_dataset.csv",
-            target="target",
-        )
+        dataset = LocalDataset(path="local_dataset.csv", target="target")
 
         assert isinstance(dataset.file_path, Path)
 
     def test_invalid_path_with_path_object(self):
         with pytest.raises(FileNotFoundError):
-            LocalDataset(
-                path=Path("file.csv"),
-                target="target",
-            )
+            LocalDataset(path=Path("file.csv"), target="target")
 
     def test_invalid_path_with_str(self):
         with pytest.raises(FileNotFoundError):
-            LocalDataset(
-                path="file.csv",
-                target="target",
-            )
+            LocalDataset(path="file.csv", target="target")
 
     def test_invalid_path_type(self):
         with pytest.raises(ValidationError):
-            LocalDataset(
-                path=123,
-                target="target",
-            )
+            LocalDataset(path=123, target="target")
 
     def test_validate_data_method_explicitly(self):
-        dataset = LocalDataset(
-            path=self.test_path,
-            target="target",
-        )
+        dataset = LocalDataset(path=self.test_path, target="target")
         dataset.validate_data()  # Will throw an error if it fails
 
     def test_create_save_name_method_explicitly(self):
-        dataset = LocalDataset(
-            path="local_dataset.csv",
-            target="target",
-        )
+        dataset = LocalDataset(path="local_dataset.csv", target="target")
         dataset.create_save_name()
 
         assert dataset.save_name == "local_dataset"
 
     def test_get_data(self):
-        dataset = LocalDataset(
-            path=self.test_path,
-            target="target",
-        )
+        dataset = LocalDataset(path=self.test_path, target="target")
         data = dataset.get_data()
 
         assert isinstance(data, pd.DataFrame)
@@ -209,10 +170,7 @@ class TestLocalDataset:
 
     def test_get_data_with_invalid_path(self):
         with pytest.raises(FileNotFoundError):
-            dataset = LocalDataset(
-                path="invalid_path.csv",
-                target="target",
-            )
+            dataset = LocalDataset(path="invalid_path.csv", target="target")
             dataset.get_data()
 
 
@@ -242,56 +200,30 @@ class TestKaggleDataset:
 
     def test_invalid_user_type(self):
         with pytest.raises(ValidationError):
-            KaggleDataset(
-                user=123,
-                dataset="some_dataset",
-                file="some_file.csv",
-                target="target",
-            )
+            KaggleDataset(user=123, dataset="some_dataset", file="some_file.csv", target="target")
 
     def test_invalid_dataset_type(self):
         with pytest.raises(ValidationError):
-            KaggleDataset(
-                user="some_user",
-                dataset=123,
-                file="some_file.csv",
-                target="target",
-            )
+            KaggleDataset(user="some_user", dataset=123, file="some_file.csv", target="target")
 
     def test_invalid_file_type(self):
         with pytest.raises(ValidationError):
-            KaggleDataset(
-                user="some_user",
-                dataset="some_dataset",
-                file=123,
-                target="target",
-            )
+            KaggleDataset(user="some_user", dataset="some_dataset", file=123, target="target")
 
     def test_validate_data_method_explicitly(self):
         dataset = KaggleDataset(
-            user="some_user",
-            dataset="some_dataset",
-            file="some_file.csv",
-            target="target",
+            user="some_user", dataset="some_dataset", file="some_file.csv", target="target"
         )
         dataset.validate_data()  # Will throw an error if it fails
 
     def test_invalid_file_extension(self):
         with pytest.raises(ValueError):
-            dataset = KaggleDataset(
-                user="user",
-                dataset="dataset",
-                file="file",
-                target="target",
-            )
+            dataset = KaggleDataset(user="user", dataset="dataset", file="file", target="target")
             dataset.validate_data()  # Already called at initialization currently
 
     def test_create_save_name_method_explicitly(self):
         dataset = KaggleDataset(
-            user="some_user",
-            dataset="some_dataset",
-            file="some_file.csv",
-            target="target",
+            user="some_user", dataset="some_dataset", file="some_file.csv", target="target"
         )
         dataset.create_save_name()
 
@@ -363,36 +295,20 @@ class TestHuggingFaceDataset:
 
     def test_invalid_repo_type(self):
         with pytest.raises(ValidationError):
-            HuggingFaceDataset(
-                repo=123,
-                file="train.csv",
-                target="target",
-            )
+            HuggingFaceDataset(repo=123, file="train.csv", target="target")
 
     def test_invalid_file_type(self):
         with pytest.raises(ValidationError):
-            HuggingFaceDataset(
-                repo="some_dataset",
-                file=123,
-                target="target",
-            )
+            HuggingFaceDataset(repo="some_dataset", file=123, target="target")
 
     def test_create_save_name_method_explicitly(self):
-        dataset = HuggingFaceDataset(
-            repo="some_dataset",
-            file="train.csv",
-            target="target",
-        )
+        dataset = HuggingFaceDataset(repo="some_dataset", file="train.csv", target="target")
         dataset.create_save_name()
 
         assert dataset.save_name == dataset.repo
 
     def test_get_data(self):
-        dataset = HuggingFaceDataset(
-            repo=self.valid_repo,
-            file=self.valid_file,
-            target="target",
-        )
+        dataset = HuggingFaceDataset(repo=self.valid_repo, file=self.valid_file, target="target")
         data = dataset.get_data()
 
         assert isinstance(data, pd.DataFrame)
@@ -400,20 +316,12 @@ class TestHuggingFaceDataset:
 
     def test_get_data_with_invalid_repo(self):
         with pytest.raises(RepositoryNotFoundError):
-            dataset = HuggingFaceDataset(
-                repo="invalid_repo",
-                file=self.valid_file,
-                target="target",
-            )
+            dataset = HuggingFaceDataset(repo="invalid_repo", file=self.valid_file, target="target")
             dataset.get_data()
 
     def test_get_data_with_invalid_file(self):
         with pytest.raises(EntryNotFoundError):
-            dataset = HuggingFaceDataset(
-                repo=self.valid_repo,
-                file="invalid_file.csv",
-                target="target",
-            )
+            dataset = HuggingFaceDataset(repo=self.valid_repo, file="invalid_file.csv", target="target")
             dataset.get_data()
 
 
@@ -615,10 +523,7 @@ class TestDatasetFactory:
 
         for dataset in datasets:
             dataset_count += 1
-            assert isinstance(
-                dataset,
-                (LocalDataset, KaggleDataset, HuggingFaceDataset, OpenMLDataset),
-            )
+            assert isinstance(dataset, (LocalDataset, KaggleDataset, HuggingFaceDataset, OpenMLDataset))
         assert dataset_count == len(self.mixed_params_list)
 
     def test_invalid_type(self):

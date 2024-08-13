@@ -32,9 +32,7 @@ def test_load_split_data_valid(split_data_fixture):
         with open(file_path, "wb") as file:
             pickle.dump(split_data_fixture, file)
 
-        loaded_X_train, loaded_X_test, loaded_y_train, loaded_y_test = load_split_data(
-            file_path
-        )
+        loaded_X_train, loaded_X_test, loaded_y_train, loaded_y_test = load_split_data(file_path)
         assert isinstance(loaded_X_train, pd.DataFrame)
         assert isinstance(loaded_y_train, pd.Series)
 

@@ -83,7 +83,7 @@ xfail_strict = true
 filterwarnings = ["ignore::DeprecationWarning:kaggle.rest"]
 
 [tool.ruff]
-line-length = 99
+line-length = 105
 exclude = [
     ".eggs",
     ".github",
@@ -101,3 +101,6 @@ exclude = [
 [tool.ruff.lint]
 ignore = ["E741"]
 pydocstyle = { convention = 'google' }
+
+[tool.black]
+line-length = 105

@@ -47,9 +47,7 @@ def df_from_suffix(file_path: str | Path, logger: logging.Logger) -> pd.DataFram
             case ".json":
                 df = pd.read_json(file_path)
             case _:
-                raise ValueError(
-                    "Data file must be a .parquet, .csv, .pkl, or .json file."
-                )
+                raise ValueError("Data file must be a .parquet, .csv, .pkl, or .json file.")
         return df
     except FileNotFoundError:
         logger.exception(f"File not found: {file_path}")
@@ -122,9 +120,7 @@ class LocalDataset(BaseDataset):
 
     def get_data(self) -> pd.DataFrame:
         df = df_from_suffix(self.file_path, logger)
-        logger.info(
-            f"Local data successfully loaded and converted to DataFrame:\n{df.head(3)}"
-        )
+        logger.info(f"Local data successfully loaded and converted to DataFrame:\n{df.head(3)}")
         return df
 
 
@@ -165,9 +161,11 @@ class KaggleDataset(BaseDataset):
         Downloads a Kaggle dataset. Currently only implemented for CSV files.
 
         Returns:
+        --------
             pd.DataFrame: Downloaded data as a Pandas DataFrame.
 
         Raises:
+        -------
             ConnectionError: If unable to authenticate with Kaggle.
             ValueError: If there's no Kaggle dataset files for the provided user and dataset names.
             ValueError: If the file name provided doesn't match any of the files in the matched dataset.
@@ -178,11 +176,7 @@ class KaggleDataset(BaseDataset):
         from kaggle.api.kaggle_api_extended import ApiException
 
         try:
-            data = kaggle.api.datasets_download_file(
-                self.user,
-                self.dataset,
-                self.file,
-            )
+            data = kaggle.api.datasets_download_file(self.user, self.dataset, self.file)
 
             file_like = StringIO(data)
             df = pd.read_csv(file_like)
@@ -201,7 +195,7 @@ class KaggleDataset(BaseDataset):
                 dataset_files = kaggle.api.datasets_list_files(self.user, self.dataset)
             except ApiException:
                 raise ValueError(
-                    "No Kaggle dataset files found using the provided username and dataset name."
+                    "No Kaggle dataset files found under the provided username and dataset name."
                 )
 
             if self.file not in [
@@ -233,19 +227,14 @@ class HuggingFaceDataset(BaseDataset):
 
         try:
             saved_data_path = hf_hub_download(
-                repo_id=self.repo,
-                filename=self.file,
-                repo_type="dataset",
-                local_dir=tmp_save_dir,
+                repo_id=self.repo, filename=self.file, repo_type="dataset", local_dir=tmp_save_dir
             )
             df = df_from_suffix(saved_data_path, logger)
         except Exception:
             shutil.rmtree(tmp_save_dir)
             raise
 
-        logger.info(
-            f"Hugging Face data successfully loaded and converted to DataFrame:\n{df.head(3)}"
-        )
+        logger.info(f"Hugging Face data successfully loaded and converted to DataFrame:\n{df.head(3)}")
         shutil.rmtree(tmp_save_dir)
         return df
 
@@ -265,21 +254,14 @@ class OpenMLDataset(BaseDataset):
         from openml.datasets import get_dataset
 
         openml_data = get_dataset(
-            self.id,
-            download_data=True,
-            download_qualities=False,
-            download_features_meta_data=False,
+            self.id, download_data=True, download_qualities=False, download_features_meta_data=False
         )
         df = openml_data.get_data()[0]
-        logger.info(
-            f"OpenML data successfully loaded and converted to DataFrame:\n{df.head(3)}"
-        )
+        logger.info(f"OpenML data successfully loaded and converted to DataFrame:\n{df.head(3)}")
         return df
 
 
-DatasetType: TypeAlias = (
-    LocalDataset | KaggleDataset | HuggingFaceDataset | OpenMLDataset
-)
+DatasetType: TypeAlias = LocalDataset | KaggleDataset | HuggingFaceDataset | OpenMLDataset
 
 
 class DatasetFactory:
@@ -316,9 +298,7 @@ class DatasetFactory:
     def __init__(self, params_list: ParamsInput) -> None:
         self.params_list = ParamsReader.read(params_list)
 
-    def __iter__(
-        self,
-    ) -> Generator[DatasetType, None, None]:
+    def __iter__(self) -> Generator[DatasetType, None, None]:
         """
         Makes the class iterable, yielding dataset instances one by one.
 

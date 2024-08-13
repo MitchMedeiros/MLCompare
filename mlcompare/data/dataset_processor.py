@@ -60,13 +60,12 @@ class DatasetProcessor:
 
     Attributes:
     -----------
-        dataset (DatasetType): DatasetType object containing a `get_data()` method and attributes needed for data processing.
+        dataset (DatasetType): DatasetType object containing a `get_data()` method and attributes needed for
+        data processing.
     """
 
     def __init__(self, dataset: DatasetType) -> None:
-        if not isinstance(
-            dataset, (KaggleDataset, LocalDataset, HuggingFaceDataset, OpenMLDataset)
-        ):
+        if not isinstance(dataset, (KaggleDataset, LocalDataset, HuggingFaceDataset, OpenMLDataset)):
             raise ValueError("Data must be a KaggleDataset or LocalDataset object.")
 
         self.data = dataset.get_data()
@@ -97,18 +96,19 @@ class DatasetProcessor:
             self.test_data = y
         except ValueError:
             logger.error(
-                "Could not split the dataset into train and set sets since it is empty."
+                "Could not split the provided data into train and test sets since it contains 1 or fewer data points."
             )
             raise
 
     def handle_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
-        Checks for missing values: NaN, "", and "." in the DataFrame and either forward-fills, backwards-fills, drops them,
-        or simply logs how many exist. Raises an exception instead is `raise_exception`=True.
+        Checks for missing values: NaN, "", and "." in the DataFrame and either forward-fills, backwards-fills,
+        drops them, or simply logs how many exist. Raises an exception instead is `raise_exception`=True.
 
         Args:
         -----
-            raise_exception (bool, optional): Whether to raise an exception if missing values are found. Defaults to False.
+            raise_exception (bool, optional): Whether to raise an exception if missing values are found.
+            Defaults to False.
 
         Returns:
         --------
@@ -138,8 +138,8 @@ class DatasetProcessor:
                 )
                 if raise_exception:
                     raise ValueError(
-                        "Missing values found in DataFrame. Set `raise_exception=False` for `DatasetProcessor.handle_nan()` "
-                        "to continue processing anyways."
+                        "Missing values found in DataFrame. Set `raise_exception=False` for "
+                        "`DatasetProcessor.handle_nan()` to continue processing anyways."
                     )
                 else:
                     df = df.replace(".", None)
@@ -157,12 +157,8 @@ class DatasetProcessor:
                                 "Unexpected value for `nan` given. Allowed values are 'ffill', 'bfill', and 'drop'."
                             )
 
-                    assert (
-                        bool(df.isna().values.any()) is False
-                    ), "handle_nan failed to remove all NaN values."
-                    logger.info(
-                        f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
-                    )
+                    assert bool(df.isna().values.any()) is False, "Not all NaN values could be removed."
+                    logger.info(f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}")
                     self.data = df
 
         return self.data
@@ -194,18 +190,14 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns replaced with one-hot encoded columns.
         """
         if self.onehot_encode:
-            encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-            encoded_train_columns = encoder.fit_transform(
-                self.train_data[self.onehot_encode]
-            )
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", max_categories=25)
+            encoded_train_columns = encoder.fit_transform(self.train_data[self.onehot_encode])
             encoded_test_columns = encoder.transform(self.test_data[self.onehot_encode])
 
             self.train_data = self.train_data.drop(self.onehot_encode, axis=1).join(
                 encoded_train_columns
             )
-            self.test_data = self.test_data.drop(self.onehot_encode, axis=1).join(
-                encoded_test_columns
-            )
+            self.test_data = self.test_data.drop(self.onehot_encode, axis=1).join(encoded_test_columns)
 
             logger.info(
                 f"Columns: {self.onehot_encode} successfully one-hot encoded. Training split:\n{self.train_data.head(3)}"
@@ -222,15 +214,11 @@ class DatasetProcessor:
             pd.DataFrame: DataFrame with the specified columns replaced with ordinal encoded columns.
         """
         if self.ordinal_encode:
-            encoder = OrdinalEncoder(
-                handle_unknown="use_encoded_value", unknown_value=-1
-            )
+            encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
             self.train_data[self.ordinal_encode] = encoder.fit_transform(
                 self.train_data[self.ordinal_encode]
             )
-            self.test_data[self.ordinal_encode] = encoder.transform(
-                self.test_data[self.ordinal_encode]
-            )
+            self.test_data[self.ordinal_encode] = encoder.transform(self.test_data[self.ordinal_encode])
 
             logger.info(
                 f"Columns: {self.ordinal_encode} successfully ordinal encoded. Training split:\n{self.train_data.head(3)}"
@@ -303,10 +291,7 @@ class DatasetProcessor:
 
         file_count = 1
         while file_path.exists():
-            file_path = (
-                save_directory
-                / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
-            )
+            file_path = save_directory / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
             file_count += 1
 
         try:
@@ -371,12 +356,7 @@ class DatasetProcessor:
             Path: Path to the saved SplitData object.
         """
         X_train, X_test, y_train, y_test = self.split_target()
-        split_data_obj = SplitData(
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-        )
+        split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
         save_directory = validate_save_directory(save_directory)
         file_path = save_directory / f"{self.save_name}-split.pkl"
@@ -421,9 +401,7 @@ class DatasetProcessor:
             raise ValueError("`save_processed` must be a boolean.")
 
         if save_original:
-            self.save_dataframe(
-                save_directory=save_directory, file_name_ending="-original"
-            )
+            self.save_dataframe(save_directory=save_directory, file_name_ending="-original")
 
         self.drop_columns()
         self.handle_nan()
@@ -432,9 +410,7 @@ class DatasetProcessor:
         self.label_encode_column()
 
         if save_processed:
-            self.save_dataframe(
-                save_directory=save_directory, file_name_ending="-processed"
-            )
+            self.save_dataframe(save_directory=save_directory, file_name_ending="-processed")
 
         return self.split_target()
 
@@ -463,11 +439,7 @@ def process_datasets(
     for dataset in datasets:
         try:
             processor = DatasetProcessor(dataset)
-            split_data = processor.process_dataset(
-                save_directory,
-                save_original,
-                save_processed,
-            )
+            split_data = processor.process_dataset(save_directory, save_original, save_processed)
             yield split_data
         except Exception:
             logger.error("Failed to process dataset.")
@@ -502,9 +474,7 @@ def process_datasets_to_files(
         try:
             processor = DatasetProcessor(dataset)
             X_train, X_test, y_train, y_test = processor.process_dataset(
-                save_directory,
-                save_original,
-                save_processed,
+                save_directory, save_original, save_processed
             )
 
             file_path = save_directory / f"{processor.save_name}-split.pkl"
@@ -513,12 +483,7 @@ def process_datasets_to_files(
             logger.error("Failed to process dataset.")
             raise
 
-        split_data_obj = SplitData(
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-        )
+        split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)

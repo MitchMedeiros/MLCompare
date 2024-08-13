@@ -28,12 +28,7 @@ def data_pipeline(
         save_directory = Path(save_directory)
     save_directory.mkdir(exist_ok=True)
 
-    process_datasets(
-        dataset_params,
-        save_directory,
-        save_original_data,
-        save_cleaned_data,
-    )
+    process_datasets(dataset_params, save_directory, save_original_data, save_cleaned_data)
 
 
 def full_pipeline(
@@ -56,12 +51,7 @@ def full_pipeline(
         save_directory = Path(save_directory)
     save_directory.mkdir(exist_ok=True)
 
-    split_data = process_datasets(
-        dataset_params,
-        save_directory,
-        save_original_data,
-        save_cleaned_data,
-    )
+    split_data = process_datasets(dataset_params, save_directory, save_original_data, save_cleaned_data)
     for data in split_data:
         process_models(model_params, data, save_directory)
         # pass custom models here ^^^

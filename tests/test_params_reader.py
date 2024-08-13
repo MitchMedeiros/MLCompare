@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 import pytest
+
 from mlcompare.params_reader import ParamsReader
 
 logger = logging.getLogger("mlcompare.params_reader")

@@ -51,9 +51,7 @@ class LibraryModel(ABC, BaseModel):
     def model_post_init(self, Any) -> None: ...
 
     @abstractmethod
-    def train(
-        self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series
-    ) -> None: ...
+    def train(self, X_train: pd.DataFrame, y_train: pd.DataFrame | pd.Series) -> None: ...
 
     @abstractmethod
     def predict(self, X_test: pd.DataFrame): ...
@@ -93,9 +91,7 @@ class LibraryModel(ABC, BaseModel):
             model_class = getattr(model_module, self.name)
         except AttributeError:
             if self.module:
-                logger.error(
-                    f"Could not find class: {self.name} in module: {self.module}."
-                )
+                logger.error(f"Could not find class: {self.name} in module: {self.module}.")
                 raise
             else:
                 logger.info(f"Searching {self._library} submodules for {self.name}.")
@@ -113,9 +109,7 @@ class LibraryModel(ABC, BaseModel):
             else:
                 ml_model = model_class()
         except Exception:
-            logger.error(
-                f"Could not initialize model {self.name} with params {self.params}"
-            )
+            logger.error(f"Could not initialize model {self.name} with params {self.params}")
             raise
 
         self._ml_model = ml_model
@@ -398,12 +392,8 @@ def process_models(
         try:
             model.train(X_train, y_train)
             prediction = model.predict(X_test)
-            model_results = evaluate_prediction(
-                y_test, prediction, model._ml_model.__class__.__name__
-            )
+            model_results = evaluate_prediction(y_test, prediction, model._ml_model.__class__.__name__)
             append_json(model_results)
         except Exception:
-            logger.error(
-                f"Failed to process model: {model._ml_model.__class__.__name__}"
-            )
+            logger.error(f"Failed to process model: {model._ml_model.__class__.__name__}")
             raise
