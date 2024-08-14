@@ -89,6 +89,7 @@ class DatasetProcessor:
         self.robust_scale = dataset.robust_scale
         self.power_transform = dataset.power_transform
         self.quantile_transform = dataset.quantile_transform
+        self.quantile_transform_normal = dataset.quantile_transform_normal
         self.normalize = dataset.normalize
 
         self.train_test_split()
@@ -396,8 +397,8 @@ class DatasetProcessor:
 
     def quantile_transform_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.QuantileTransformer` to the columns specified with the
-        `quantileTransform` parameter.
+        Applies `sklearn.preprocessing.QuantileTransformer` with `output_distribution = "uniform"`
+        to the columns specified with the `quantileTransform` parameter.
 
         Returns:
         --------
@@ -406,6 +407,21 @@ class DatasetProcessor:
         if self.quantile_transform:
             scaler = QuantileTransformer(output_distribution="uniform")
             self.scale_columns(scaler=scaler, columns=self.quantile_transform)
+
+        return self.train_data, self.test_data
+
+    def quantile_transform_normal_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.QuantileTransformer` with `output_distribution = "normal"`
+        to the columns specified with the `quantileTransformNormal` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.quantile_transform_normal:
+            scaler = QuantileTransformer(output_distribution="normal")
+            self.scale_columns(scaler=scaler, columns=self.quantile_transform_normal)
 
         return self.train_data, self.test_data
 

@@ -80,6 +80,7 @@ class BaseDataset(ABC, BaseModel):
     robust_scale: list[str] | None = Field(None, alias="robustScale")
     power_transform: list[str] | None = Field(None, alias="powerTransform")
     quantile_transform: list[str] | None = Field(None, alias="quantileTransform")
+    quantile_transform_normal: list[str] | None = Field(None, alias="quantileTransformNormal")
     normalize: list[str] | None = None
 
     @abstractmethod
