@@ -10,9 +10,14 @@ import sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import (
     LabelEncoder,
+    MaxAbsScaler,
     MinMaxScaler,
+    Normalizer,
     OneHotEncoder,
     OrdinalEncoder,
+    PowerTransformer,
+    QuantileTransformer,
+    RobustScaler,
     StandardScaler,
     TargetEncoder,
 )
@@ -80,12 +85,18 @@ class DatasetProcessor:
         self.label_encode = dataset.label_encode
         self.standard_scale = dataset.standard_scale
         self.min_max_scale = dataset.min_max_scale
+        self.max_abs_scale = dataset.max_abs_scale
+        self.robust_scale = dataset.robust_scale
+        self.power_transform = dataset.power_transform
+        self.quantile_transform = dataset.quantile_transform
+        self.normalize = dataset.normalize
 
         self.train_test_split()
 
     def train_test_split(self, test_size: float = 0.2) -> None:
         """
-        Splits the data into training and testing sets. A wrapper around scikit-learn's `train_test_split` function.
+        Splits the data into training and testing sets. A wrapper around scikit-learn's `train_test_split`
+        function.
         """
         if not isinstance(test_size, float):
             raise ValueError("`test_size` must be a float.")
@@ -100,14 +111,15 @@ class DatasetProcessor:
             self.test_data = y
         except ValueError:
             logger.error(
-                "Could not split the provided data into train and test sets since it contains 1 or fewer data points."
+                "Could not split the provided data into train and test sets since it contains 1 "
+                "or fewer data points."
             )
             raise
 
     def handle_nan(self, raise_exception: bool = False) -> pd.DataFrame:
         """
-        Checks for missing values: NaN, "", and "." in the DataFrame and either forward-fills, backwards-fills,
-        drops them, or simply logs how many exist. Raises an exception instead is `raise_exception`=True.
+        Checks for missing values including: np.nan, None, "", and "." in the DataFrame and either forward-fills (ffill),
+        backwards-fills (bfill), or drops (drop) them based on the value specified with the `nan` parameter.
 
         Args:
         -----
@@ -169,11 +181,11 @@ class DatasetProcessor:
 
     def drop_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Drops the specified columns from the DataFrame.
+        Drops the columns specified with the `drop` parameter.
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the specified columns dropped.
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns dropped.
         """
         if self.drop:
             self.train_data = self.train_data.drop(self.drop, axis=1)
@@ -187,11 +199,12 @@ class DatasetProcessor:
 
     def onehot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        One-hot encodes the specified columns and replaces them in the DataFrame.
+        Applies `sklearn.preprocessing.OneHotEncoder` to the columns specified with the `onehotEncode`
+        parameter.
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the specified columns replaced with one-hot encoded columns.
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
         """
         if self.onehot_encode:
             encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", max_categories=25)
@@ -211,11 +224,12 @@ class DatasetProcessor:
 
     def ordinal_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Ordinal encodes the specified columns and replaces them in the DataFrame.
+        Applies `sklearn.preprocessing.OrdinalEncoder` to the columns specified with the `ordinalEncode`
+        parameter.
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the specified columns replaced with ordinal encoded columns.
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
         """
         if self.ordinal_encode:
             encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
@@ -232,11 +246,12 @@ class DatasetProcessor:
 
     def target_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Target encodes the specified columns and replaces them in the DataFrame.
+        Applies `sklearn.preprocessing.TargetEncoder` to the columns specified with the `targetEncode`
+        parameter.
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the specified columns replaced with target encoded columns.
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
         """
         if self.target_encode:
             encoder = TargetEncoder(random_state=1, cv=3)
@@ -253,11 +268,11 @@ class DatasetProcessor:
 
     def label_encode_column(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Label encodes the specified columns and replaces them in the DataFrame.
+        Applies `sklearn.preprocessing.LabelEncoder` to the target column.
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the specified columns replaced with label encoded columns.
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the target column encoded.
         """
         if self.label_encode:
             train_df = self.train_data.copy()
@@ -269,9 +284,10 @@ class DatasetProcessor:
                 test_df[self.target] = encoder.transform(test_df[self.target])
             except ValueError:
                 logger.warning(
-                    "Labels are present in the generated test split that are not present in the training split and, therefore, cannot be fit. \n"
-                    "To resolve this, the label encoder will be fit on the entire dataset. This introduces data-leakage and may negatively impact the reliability of the results. \n"
-                    "Consider using a larger dataset to address this."
+                    "Labels are present in the generated test split that are not present in the training split "
+                    "and, therefore, cannot be fit. To resolve this, the label encoder will be fit on the entire "
+                    "dataset. This introduces data-leakage and may negatively impact the reliability of the "
+                    "results. Consider using a larger dataset to address this."
                 )
                 combined_df = pd.concat([train_df, test_df])
 
@@ -286,7 +302,19 @@ class DatasetProcessor:
             self.test_data = test_df
         return self.train_data, self.test_data
 
-    def scale_columns(self, scaler: StandardScaler | MinMaxScaler, columns: list[str]) -> None:
+    def scale_columns(
+        self,
+        scaler: (
+            StandardScaler
+            | MinMaxScaler
+            | MaxAbsScaler
+            | RobustScaler
+            | PowerTransformer
+            | QuantileTransformer
+            | Normalizer
+        ),
+        columns: list[str],
+    ) -> None:
         self.train_data[columns] = scaler.fit_transform(self.train_data[columns])
         self.test_data[columns] = scaler.transform(self.test_data[columns])
 
@@ -295,6 +323,14 @@ class DatasetProcessor:
         )
 
     def standard_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.StandardScaler` to the columns specified with the `standardScale`
+        parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
         if self.standard_scale:
             scaler = StandardScaler()
             self.scale_columns(scaler=scaler, columns=self.standard_scale)
@@ -302,9 +338,88 @@ class DatasetProcessor:
         return self.train_data, self.test_data
 
     def min_max_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.MinMaxScaler` to the columns specified with the `minMaxScale` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
         if self.min_max_scale:
             scaler = MinMaxScaler()
             self.scale_columns(scaler=scaler, columns=self.min_max_scale)
+
+        return self.train_data, self.test_data
+
+    def max_abs_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.MaxAbsScaler` to the columns specified with the `maxAbsScale` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.max_abs_scale:
+            scaler = MaxAbsScaler()
+            self.scale_columns(scaler=scaler, columns=self.max_abs_scale)
+
+        return self.train_data, self.test_data
+
+    def robust_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.RobustScaler` to the columns specified with the `robustScale` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.robust_scale:
+            scaler = RobustScaler(quantile_range=(25, 75))
+            self.scale_columns(scaler=scaler, columns=self.robust_scale)
+
+        return self.train_data, self.test_data
+
+    def power_transform_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.PowerTransformer` using the yeo-johnson method to the columns specified
+        with the `powerTransform` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.power_transform:
+            scaler = PowerTransformer(method="yeo-johnson")
+            self.scale_columns(scaler=scaler, columns=self.power_transform)
+
+        return self.train_data, self.test_data
+
+    def quantile_transform_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.QuantileTransformer` to the columns specified with the
+        `quantileTransform` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.quantile_transform:
+            scaler = QuantileTransformer(output_distribution="uniform")
+            self.scale_columns(scaler=scaler, columns=self.quantile_transform)
+
+        return self.train_data, self.test_data
+
+    def normalize_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Applies `sklearn.preprocessing.Normalizer` to the columns specified with the `normalize` parameter.
+
+        Returns:
+        --------
+            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+        """
+        if self.normalize:
+            scaler = Normalizer()
+            self.scale_columns(scaler=scaler, columns=self.normalize)
 
         return self.train_data, self.test_data
 

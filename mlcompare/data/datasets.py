@@ -76,6 +76,11 @@ class BaseDataset(ABC, BaseModel):
     label_encode: Literal["yes"] | None = Field(None, alias="labelEncode")
     standard_scale: list[str] | None = Field(None, alias="standardScale")
     min_max_scale: list[str] | None = Field(None, alias="minMaxScale")
+    max_abs_scale: list[str] | None = Field(None, alias="maxAbsScale")
+    robust_scale: list[str] | None = Field(None, alias="robustScale")
+    power_transform: list[str] | None = Field(None, alias="powerTransform")
+    quantile_transform: list[str] | None = Field(None, alias="quantileTransform")
+    normalize: list[str] | None = None
 
     @abstractmethod
     def model_post_init(self, Any) -> None: ...
