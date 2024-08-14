@@ -63,7 +63,7 @@ class BaseDataset(ABC, BaseModel):
         target (str): Column name for the target of the predictions.
         save_name (str | None): Name to use for files saved from this dataset. Should be unique across datasets.
         drop (list[str] | None): List of column names to be dropped from the dataset.
-        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        one_hot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
     target: str
@@ -71,7 +71,7 @@ class BaseDataset(ABC, BaseModel):
     drop: list[str] | None = None
     nan: Literal["ffill", "bfill", "drop"] | None = None
     ordinal_encode: list[str] | None = Field(None, alias="ordinalEncode")
-    onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
+    one_hot_encode: list[str] | None = Field(None, alias="oneHotEncode")
     target_encode: list[str] | None = Field(None, alias="targetEncode")
     label_encode: Literal["yes"] | None = Field(None, alias="labelEncode")
     standard_scale: list[str] | None = Field(None, alias="standardScale")
@@ -104,7 +104,7 @@ class LocalDataset(BaseDataset):
         save_name (str | None): Name to use for files saved from this dataset. Should be unique across datasets.
         If None, the file will be saved with the same name as the original file.
         drop (list[str] | None): List of column names to be dropped from the dataset.
-        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        one_hot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
     file_path: str | Path = Field(..., alias="path")
@@ -146,7 +146,7 @@ class KaggleDataset(BaseDataset):
         save_name (str | None): Name to use for files saved from this dataset. Should be unique across datasets.
         If None, the file will be named `user_dataset`.
         drop (list[str] | None): List of column names to be dropped from the dataset.
-        onehot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
+        one_hot_encode (list[str] | None): List of column names to be one-hot encoded in the dataset.
     """
 
     user: str
@@ -297,7 +297,7 @@ class DatasetFactory:
         Optional Keys:
             save_name (str): Name to use for files saved from this dataset. Should be unique across datasets.
             drop (list[str]): List of column names to drop from the downloaded data.
-            onehot_encode (list[str]): List of column names to encode using a specific encoding method.
+            one_hot_encode (list[str]): List of column names to encode using a specific encoding method.
 
     Raises:
     -------

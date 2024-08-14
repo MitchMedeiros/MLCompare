@@ -59,7 +59,7 @@ def test_df_from_suffix_unsupported_file_type():
 class TestBaseDataset:
     def test_init(self):
         with pytest.raises(TypeError):
-            BaseDataset(target="target", drop=["col1"], onehotEncode=["col2"])
+            BaseDataset(target="target", drop=["col1"], oneHotEncode=["col2"])
 
 
 # Minimal implementation of BaseDataset for testing
@@ -77,20 +77,20 @@ class BaseDatasetChild(BaseDataset):
 class TestBaseDatasetChild:
     def test_init(self):
         dummy_dataset = BaseDatasetChild(
-            target="target", saveName="dummy_dataset", drop=["col1"], onehotEncode=["col2", "col3"]
+            target="target", saveName="dummy_dataset", drop=["col1"], oneHotEncode=["col2", "col3"]
         )
 
         assert dummy_dataset.target == "target"
         assert dummy_dataset.save_name == "dummy_dataset"
         assert dummy_dataset.drop == ["col1"]
-        assert dummy_dataset.onehot_encode == ["col2", "col3"]
+        assert dummy_dataset.one_hot_encode == ["col2", "col3"]
 
     def test_no_optional_columns(self):
         dummy_dataset = BaseDatasetChild(target="target")
 
         assert dummy_dataset.target == "target"
         assert dummy_dataset.drop is None
-        assert dummy_dataset.onehot_encode is None
+        assert dummy_dataset.one_hot_encode is None
         assert dummy_dataset.save_name is None
 
     def test_no_target(self):
@@ -109,9 +109,9 @@ class TestBaseDatasetChild:
         with pytest.raises(ValidationError):
             BaseDatasetChild(target="target", drop="123")
 
-    def test_invalid_onehot_encode_type(self):
+    def test_invalid_one_hot_encode_type(self):
         with pytest.raises(ValidationError):
-            BaseDatasetChild(target="target", onehotEncode="123")
+            BaseDatasetChild(target="target", oneHotEncode="123")
 
 
 # Currently the `validate_data` and `create_save_name` methods are run at initialization
@@ -125,14 +125,14 @@ class TestLocalDataset:
             target="target",
             saveName="testing_local_dataset",
             drop=["col1", "col2"],
-            onehotEncode=["col3"],
+            oneHotEncode=["col3"],
         )
 
         assert dataset.file_path == self.test_path
         assert dataset.target == "target"
         assert dataset.save_name == "testing_local_dataset"
         assert dataset.drop == ["col1", "col2"]
-        assert dataset.onehot_encode == ["col3"]
+        assert dataset.one_hot_encode == ["col3"]
 
     def test_init_with_str_path(self):
         dataset = LocalDataset(path="local_dataset.csv", target="target")
@@ -187,7 +187,7 @@ class TestKaggleDataset:
             target="target",
             saveName="testing_kaggle_dataset",
             drop=["col1", "col2"],
-            onehotEncode=["col3"],
+            oneHotEncode=["col3"],
         )
 
         assert dataset.user == "some_user"
@@ -196,7 +196,7 @@ class TestKaggleDataset:
         assert dataset.target == "target"
         assert dataset.save_name == "testing_kaggle_dataset"
         assert dataset.drop == ["col1", "col2"]
-        assert dataset.onehot_encode == ["col3"]
+        assert dataset.one_hot_encode == ["col3"]
 
     def test_invalid_user_type(self):
         with pytest.raises(ValidationError):
@@ -283,7 +283,7 @@ class TestHuggingFaceDataset:
             target="target",
             saveName="testing_huggingface_dataset",
             drop=["col1", "col2"],
-            onehotEncode=["col3"],
+            oneHotEncode=["col3"],
         )
 
         assert dataset.repo == "some_dataset"
@@ -291,7 +291,7 @@ class TestHuggingFaceDataset:
         assert dataset.target == "target"
         assert dataset.save_name == "testing_huggingface_dataset"
         assert dataset.drop == ["col1", "col2"]
-        assert dataset.onehot_encode == ["col3"]
+        assert dataset.one_hot_encode == ["col3"]
 
     def test_invalid_repo_type(self):
         with pytest.raises(ValidationError):
@@ -334,14 +334,14 @@ class TestOpenMLDataset:
             target="target",
             saveName="testing_openml_dataset",
             drop=["col1", "col2"],
-            onehotEncode=["col3"],
+            oneHotEncode=["col3"],
         )
 
         assert dataset.id == 1
         assert dataset.target == "target"
         assert dataset.save_name == "testing_openml_dataset"
         assert dataset.drop == ["col1", "col2"]
-        assert dataset.onehot_encode == ["col3"]
+        assert dataset.one_hot_encode == ["col3"]
 
     def test_init_without_id(self):
         with pytest.raises(ValidationError):

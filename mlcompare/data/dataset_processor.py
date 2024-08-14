@@ -79,7 +79,7 @@ class DatasetProcessor:
         self.save_name = dataset.save_name
         self.drop = dataset.drop
         self.nan = dataset.nan
-        self.onehot_encode = dataset.onehot_encode
+        self.one_hot_encode = dataset.one_hot_encode
         self.ordinal_encode = dataset.ordinal_encode
         self.target_encode = dataset.target_encode
         self.label_encode = dataset.label_encode
@@ -198,7 +198,7 @@ class DatasetProcessor:
 
         return self.train_data, self.test_data
 
-    def onehot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def one_hot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Applies `sklearn.preprocessing.OneHotEncoder` to the columns specified with the `onehotEncode`
         parameter.
@@ -207,18 +207,18 @@ class DatasetProcessor:
         --------
             (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
         """
-        if self.onehot_encode:
+        if self.one_hot_encode:
             encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", max_categories=25)
-            encoded_train_columns = encoder.fit_transform(self.train_data[self.onehot_encode])
-            encoded_test_columns = encoder.transform(self.test_data[self.onehot_encode])
+            encoded_train_columns = encoder.fit_transform(self.train_data[self.one_hot_encode])
+            encoded_test_columns = encoder.transform(self.test_data[self.one_hot_encode])
 
-            self.train_data = self.train_data.drop(self.onehot_encode, axis=1).join(
+            self.train_data = self.train_data.drop(self.one_hot_encode, axis=1).join(
                 encoded_train_columns
             )
-            self.test_data = self.test_data.drop(self.onehot_encode, axis=1).join(encoded_test_columns)
+            self.test_data = self.test_data.drop(self.one_hot_encode, axis=1).join(encoded_test_columns)
 
             logger.info(
-                f"Columns: {self.onehot_encode} successfully one-hot encoded. Training split:\n{self.train_data.head(3)}"
+                f"Columns: {self.one_hot_encode} successfully one-hot encoded. Training split:\n{self.train_data.head(3)}"
             )
 
         return self.train_data, self.test_data
@@ -583,7 +583,7 @@ class DatasetProcessor:
 
         self.drop_columns()
         self.handle_nan()
-        self.onehot_encode_columns()
+        self.one_hot_encode_columns()
         self.ordinal_encode_columns()
         self.target_encode_columns()
         self.label_encode_column()

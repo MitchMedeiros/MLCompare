@@ -42,7 +42,7 @@ class TestDatasetProcessor:
         "path": "integer_data.csv",
         "target": "F",
         "drop": ["A", "C"],
-        "onehotEncode": ["B", "D"],
+        "oneHotEncode": ["B", "D"],
         "nan": "drop",
     }
 
@@ -75,9 +75,9 @@ class TestDatasetProcessor:
         assert "F" in train_data.columns
         assert "F" in test_data.columns
 
-    def test_onehot_encode_columns(self):
+    def test_one_hot_encode_columns(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        train_data, test_data = processor.onehot_encode_columns()
+        train_data, test_data = processor.one_hot_encode_columns()
 
         assert "B" not in train_data.columns
         assert "B" not in test_data.columns
