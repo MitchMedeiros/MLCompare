@@ -174,8 +174,12 @@ class DatasetProcessor:
                                 "Unexpected value for `nan` given. Allowed values are 'ffill', 'bfill', and 'drop'."
                             )
 
-                    assert bool(df.isna().values.any()) is False, "Not all NaN values could be removed."
-                    logger.info(f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}")
+                    if bool(df.isna().values.any()) is False:
+                        logger.warning("Not all NaN values were removed.")
+                    else:
+                        logger.info(
+                            f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
+                        )
                     self.data = df
 
         return self.data
@@ -303,7 +307,7 @@ class DatasetProcessor:
             self.test_data = test_df
         return self.train_data, self.test_data
 
-    def scale_columns(
+    def _standardize_columns(
         self,
         scaler: (
             StandardScaler
@@ -334,7 +338,7 @@ class DatasetProcessor:
         """
         if self.standard_scale:
             scaler = StandardScaler()
-            self.scale_columns(scaler=scaler, columns=self.standard_scale)
+            self._standardize_columns(scaler=scaler, columns=self.standard_scale)
 
         return self.train_data, self.test_data
 
@@ -348,7 +352,7 @@ class DatasetProcessor:
         """
         if self.min_max_scale:
             scaler = MinMaxScaler()
-            self.scale_columns(scaler=scaler, columns=self.min_max_scale)
+            self._standardize_columns(scaler=scaler, columns=self.min_max_scale)
 
         return self.train_data, self.test_data
 
@@ -362,7 +366,7 @@ class DatasetProcessor:
         """
         if self.max_abs_scale:
             scaler = MaxAbsScaler()
-            self.scale_columns(scaler=scaler, columns=self.max_abs_scale)
+            self._standardize_columns(scaler=scaler, columns=self.max_abs_scale)
 
         return self.train_data, self.test_data
 
@@ -376,7 +380,7 @@ class DatasetProcessor:
         """
         if self.robust_scale:
             scaler = RobustScaler(quantile_range=(25, 75))
-            self.scale_columns(scaler=scaler, columns=self.robust_scale)
+            self._standardize_columns(scaler=scaler, columns=self.robust_scale)
 
         return self.train_data, self.test_data
 
@@ -391,7 +395,7 @@ class DatasetProcessor:
         """
         if self.power_transform:
             scaler = PowerTransformer(method="yeo-johnson")
-            self.scale_columns(scaler=scaler, columns=self.power_transform)
+            self._standardize_columns(scaler=scaler, columns=self.power_transform)
 
         return self.train_data, self.test_data
 
@@ -406,7 +410,7 @@ class DatasetProcessor:
         """
         if self.quantile_transform:
             scaler = QuantileTransformer(output_distribution="uniform")
-            self.scale_columns(scaler=scaler, columns=self.quantile_transform)
+            self._standardize_columns(scaler=scaler, columns=self.quantile_transform)
 
         return self.train_data, self.test_data
 
@@ -421,7 +425,7 @@ class DatasetProcessor:
         """
         if self.quantile_transform_normal:
             scaler = QuantileTransformer(output_distribution="normal")
-            self.scale_columns(scaler=scaler, columns=self.quantile_transform_normal)
+            self._standardize_columns(scaler=scaler, columns=self.quantile_transform_normal)
 
         return self.train_data, self.test_data
 
@@ -435,7 +439,7 @@ class DatasetProcessor:
         """
         if self.normalize:
             scaler = Normalizer()
-            self.scale_columns(scaler=scaler, columns=self.normalize)
+            self._standardize_columns(scaler=scaler, columns=self.normalize)
 
         return self.train_data, self.test_data
 
@@ -587,6 +591,14 @@ class DatasetProcessor:
         self.ordinal_encode_columns()
         self.target_encode_columns()
         self.label_encode_column()
+        self.standard_scale_columns()
+        self.min_max_scale_columns()
+        self.max_abs_scale_columns()
+        self.robust_scale_columns()
+        self.power_transform_columns()
+        self.quantile_transform_columns()
+        self.quantile_transform_normal_columns()
+        self.normalize_columns()
 
         if save_processed:
             self.save_dataframe(save_directory=save_directory, file_name_ending="-processed")
