@@ -47,31 +47,28 @@ MLCompare is a Python package for running model comparison pipelines, with the a
         <th><div align="center">Data Processing</div></th>
     </tr>
     <tr>
-        <td>
+        <td valign="top">
             <ul>
-                <!-- <li>PyTorch</li> -->
                 <li>Scikit-learn</li>
                 <li>XGBoost</li>
-                <!-- <li>LightGBM</li> -->
-                <!-- <li>User defined models</li> -->
             </ul>
         </td>
-        <td>
+        <td valign="top">
             <ul>
                 <li>Kaggle</li>
-                <li>Hugging Face</li>
                 <li>OpenML</li>
-                <!-- <li>S3</li> -->
-                <li>Locally saved</li>
+                <li>Hugging Face</li>
+                <li>locally saved</li>
             </ul>
         </td>
-        <td>
+        <td valign="top">
             <ul>
-                <li>Train-test split</li>
-                <li>Drop Columns</li>
-                <li><b>Encode</b>: One-hot | Ordinal | Target | Label</li>
-                <li><b>Regularize</b>: Standard | MinMax</li>
-                <li><b>NaNs</b>: Drop | Forward-fill | Backward-fill</li>
+                <li>train-test split</li>
+                <li>drop columns</li>
+                <li>handle NaNs: <i>drop</i> | <i>forward-fill</i> | <i>backward-fill</i></li>
+                <li>encoders: <i>OneHot</i> | <i>Ordinal</i> | <i>Target</i> | <i>Label</i></li>
+                <li>scalers: <i>Standard</i> | <i>MinMax</i> | <i>MaxAbs</i> | <i>Robust</i></li>
+                <li>transformers: <i>Quantile</i> | <i>Power</i> | <i>Normalizer</i></li>
             </ul>
         </td>
     </tr>
@@ -119,7 +116,7 @@ datasets = [
         "dataset": "plant-growth-data-classification",
         "file": "plant_growth_data.csv",
         "target": "Growth_Milestone",
-        "onehotEncode": ["Soil_Type", "Water_Frequency", "Fertilizer_Type"],
+        "oneHotEncode": ["Soil_Type", "Water_Frequency", "Fertilizer_Type"],
     }
 ]
 
