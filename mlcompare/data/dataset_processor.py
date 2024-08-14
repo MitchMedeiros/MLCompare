@@ -78,6 +78,8 @@ class DatasetProcessor:
         self.ordinal_encode = dataset.ordinal_encode
         self.target_encode = dataset.target_encode
         self.label_encode = dataset.label_encode
+        self.standard_scale = dataset.standard_scale
+        self.min_max_scale = dataset.min_max_scale
 
         self.train_test_split()
 
@@ -284,6 +286,28 @@ class DatasetProcessor:
             self.test_data = test_df
         return self.train_data, self.test_data
 
+    def scale_columns(self, scaler: StandardScaler | MinMaxScaler, columns: list[str]) -> None:
+        self.train_data[columns] = scaler.fit_transform(self.train_data[columns])
+        self.test_data[columns] = scaler.transform(self.test_data[columns])
+
+        logger.info(
+            f"Columns: {columns} successfully regularized. Training split:\n{self.train_data.head(3)}"
+        )
+
+    def standard_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        if self.standard_scale:
+            scaler = StandardScaler()
+            self.scale_columns(scaler=scaler, columns=self.standard_scale)
+
+        return self.train_data, self.test_data
+
+    def min_max_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        if self.min_max_scale:
+            scaler = MinMaxScaler()
+            self.scale_columns(scaler=scaler, columns=self.min_max_scale)
+
+        return self.train_data, self.test_data
+
     def save_dataframe(
         self,
         save_directory: Path | str,
@@ -430,6 +454,7 @@ class DatasetProcessor:
         self.handle_nan()
         self.onehot_encode_columns()
         self.ordinal_encode_columns()
+        self.target_encode_columns()
         self.label_encode_column()
 
         if save_processed:

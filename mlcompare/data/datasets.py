@@ -74,6 +74,8 @@ class BaseDataset(ABC, BaseModel):
     onehot_encode: list[str] | None = Field(None, alias="onehotEncode")
     target_encode: list[str] | None = Field(None, alias="targetEncode")
     label_encode: Literal["yes"] | None = Field(None, alias="labelEncode")
+    standard_scale: list[str] | None = Field(None, alias="standardScale")
+    min_max_scale: list[str] | None = Field(None, alias="minMaxScale")
 
     @abstractmethod
     def model_post_init(self, Any) -> None: ...
