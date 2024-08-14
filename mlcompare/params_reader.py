@@ -70,13 +70,13 @@ class ParamsReader:
             with open(file_path, "r") as file:
                 return json.load(file)
         except FileNotFoundError:
-            logger.exception(f"Could not find file: {file_path}")
+            logger.error(f"Could not find file: {file_path}")
             raise
         except json.JSONDecodeError:
-            logger.exception(f"Error decoding JSON from file: {file_path}")
+            logger.error(f"Error decoding JSON from file: {file_path}")
             raise
         except Exception:
-            logger.exception(f"Unexpected error loading params from file: {file_path}")
+            logger.error(f"Unexpected error loading params from file: {file_path}")
             raise
 
     @staticmethod

@@ -50,7 +50,7 @@ def df_from_suffix(file_path: str | Path, logger: logging.Logger) -> pd.DataFram
                 raise ValueError("Data file must be a .parquet, .csv, .pkl, or .json file.")
         return df
     except FileNotFoundError:
-        logger.exception(f"File not found: {file_path}")
+        logger.error(f"File not found: {file_path}")
         raise
 
 

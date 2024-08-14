@@ -11,14 +11,17 @@ from pydantic import BaseModel, ConfigDict
 logger = logging.getLogger(__name__)
 
 SplitDataTuple: TypeAlias = tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame | pd.Series, pd.DataFrame | pd.Series
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame | pd.Series,
+    pd.DataFrame | pd.Series,
 ]
-"""Data for training and testing."""
+"""A train-test split also split by features and target variable. Primarily used to both train and evaluate models."""
 
 
 class SplitData(BaseModel):
     """
-    Validates and holds the split data from `sklearn.model_selection.train_test_split`.
+    Validates and stores train-test and feature-target split data.
     """
 
     X_train: pd.DataFrame
@@ -39,7 +42,11 @@ def load_split_data(load_path: Path | str) -> SplitDataTuple:
 
     Returns:
     --------
-        SplitDataTuple: Tuple of length 4 containing the training and testing data split by features and target.
+        SplitDataTuple:
+            pd.DataFrame: Training split features.
+            pd.DataFrame: Testing split features.
+            pd.DataFrame | pd.Series: Training split target values.
+            pd.DataFrame | pd.Series: Testing split target values.
     """
     if not isinstance(load_path, (Path)):
         if not isinstance(load_path, str):

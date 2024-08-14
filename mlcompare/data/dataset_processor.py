@@ -72,9 +72,10 @@ class DatasetProcessor:
 
     def __init__(self, dataset: DatasetType) -> None:
         if not isinstance(dataset, (KaggleDataset, LocalDataset, HuggingFaceDataset, OpenMLDataset)):
-            raise ValueError("Data must be a KaggleDataset or LocalDataset object.")
+            raise ValueError(
+                "`dataset` must be an instance of a KaggleDataset, LocalDataset, HuggingFaceDataset, or OpenMLDataset."
+            )
 
-        self.data = dataset.get_data()
         self.target = dataset.target
         self.save_name = dataset.save_name
         self.drop = dataset.drop
@@ -92,22 +93,19 @@ class DatasetProcessor:
         self.quantile_transform_normal = dataset.quantile_transform_normal
         self.normalize = dataset.normalize
 
-        self.train_test_split()
+        self._train_test_split_data(data=dataset.get_data())
 
-    def train_test_split(self, test_size: float = 0.2) -> None:
-        """
-        Splits the data into training and testing sets. A wrapper around scikit-learn's `train_test_split`
-        function.
-        """
+    def _train_test_split_data(self, data: pd.DataFrame, test_size: float = 0.2) -> None:
+        """Splits the data into train and test sets and saves them as attributes for future processing."""
         if not isinstance(test_size, float):
             raise ValueError("`test_size` must be a float.")
         if test_size <= 0 or test_size >= 1:
             raise ValueError("`test_size` must be between 0 and 1.")
 
         try:
-            X, y = train_test_split(self.data, test_size=test_size, random_state=0)
+            X, y = train_test_split(data, test_size=test_size, random_state=0)
 
-            logger.info(f"Data successfully split: {X.shape=}, {y.shape=}")
+            logger.info(f"Data successfully split: {X.shape=}, {y.shape=}. Training split:\n{X.head(3)}")
             self.train_data = X
             self.test_data = y
         except ValueError:
@@ -117,10 +115,10 @@ class DatasetProcessor:
             )
             raise
 
-    def handle_nan(self, raise_exception: bool = False) -> pd.DataFrame:
+    def handle_nan(self, raise_exception: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Checks for missing values including: np.nan, None, "", and "." in the DataFrame and either forward-fills (ffill),
-        backwards-fills (bfill), or drops (drop) them based on the value specified with the `nan` parameter.
+        Handles missing values in the data including: np.nan, None, "", and "." by either forward-filling
+        (ffill), backward-filling (bfill), or dropping (drop) them based on the `nan` parameter.
 
         Args:
         -----
@@ -129,8 +127,9 @@ class DatasetProcessor:
 
         Returns:
         --------
-            pd.DataFrame: DataFrame with the missing values either forward-filled, backward-filled,
-            or dropped or neither if a method is provided for the dataset.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the missing values in the
+            specified columns either forward-filled, backward-filled, or dropped or neither if a
+            method is provided for the dataset.
 
         Raises:
         -------
@@ -140,49 +139,49 @@ class DatasetProcessor:
             raise ValueError("`raise_exception` must be a boolean.")
 
         if self.nan:
-            df = self.data
 
-            # Convert from numpy bool_ type to be safe
-            has_nan = bool(df.isna().values.any())
-            has_empty_strings = bool((df == "").values.any())
-            has_dot_values = bool((df == ".").values.any())
-            missing_values = has_nan or has_empty_strings or has_dot_values
+            def handle_nan_for_split(df: pd.DataFrame) -> pd.DataFrame:
+                # Convert from numpy bool_ type to be safe
+                has_nan = bool(df.isna().values.any())
+                has_empty_strings = bool((df == "").values.any())
+                has_dot_values = bool((df == ".").values.any())
+                missing_values = has_nan or has_empty_strings or has_dot_values
 
-            if missing_values:
-                logger.warning(
-                    f"Missing values found in DataFrame: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
-                    f"\nDataFrame:\n{df.head(3)}"
-                )
-                if raise_exception:
-                    raise ValueError(
-                        "Missing values found in DataFrame. Set `raise_exception=False` for "
-                        "`DatasetProcessor.handle_nan()` to continue processing anyways."
+                if missing_values:
+                    logger.info(
+                        f"Missing values found in data: {has_nan=}, {has_empty_strings=}, {has_dot_values=}."
+                        f"\nDataFrame:\n{df.head(3)}"
                     )
-                else:
-                    df = df.replace(".", None)
-                    df = df.replace("", None)
-
-                    match self.nan:
-                        case "ffill":
-                            df = df.ffill()
-                        case "bfill":
-                            df = df.bfill()
-                        case "drop":
-                            df = df.dropna()
-                        case _:
-                            raise ValueError(
-                                "Unexpected value for `nan` given. Allowed values are 'ffill', 'bfill', and 'drop'."
-                            )
-
-                    if bool(df.isna().values.any()) is False:
-                        logger.warning("Not all NaN values were removed.")
-                    else:
-                        logger.info(
-                            f"Rows with missing values dropped. \nNew DataFrame length: {len(df)}"
+                    if raise_exception:
+                        raise ValueError(
+                            "Missing values found in data. Set `raise_exception=False` to continue processing."
                         )
-                    self.data = df
+                    else:
+                        df = df.replace({"": None, ".": None})
 
-        return self.data
+                        match self.nan:
+                            case "ffill":
+                                df = df.ffill()
+                            case "bfill":
+                                df = df.bfill()
+                            case "drop":
+                                df = df.dropna()
+                            case _:
+                                raise ValueError(
+                                    "Unexpected value for `nan` given. Allowed values are 'ffill', 'bfill', and 'drop'."
+                                )
+
+                        if df.isna().any().any():
+                            logger.warning("Not all NaN values were removed.")
+                        else:
+                            logger.info(f"Missing values handled. \nNew DataFrame length: {len(df)}")
+
+                return df
+
+            self.train_data = handle_nan_for_split(self.train_data)
+            self.test_data = handle_nan_for_split(self.test_data)
+
+        return self.train_data, self.test_data
 
     def drop_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -190,7 +189,8 @@ class DatasetProcessor:
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns dropped.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the columns specified by the
+            `drop` parameter dropped.
         """
         if self.drop:
             self.train_data = self.train_data.drop(self.drop, axis=1)
@@ -204,12 +204,12 @@ class DatasetProcessor:
 
     def one_hot_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.OneHotEncoder` to the columns specified with the `onehotEncode`
+        Applies `sklearn.preprocessing.OneHotEncoder` to the columns specified by the `onehotEncode`
         parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns encoded.
         """
         if self.one_hot_encode:
             encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore", max_categories=25)
@@ -229,12 +229,12 @@ class DatasetProcessor:
 
     def ordinal_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.OrdinalEncoder` to the columns specified with the `ordinalEncode`
+        Applies `sklearn.preprocessing.OrdinalEncoder` to the columns specified by the `ordinalEncode`
         parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns encoded.
         """
         if self.ordinal_encode:
             encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
@@ -251,12 +251,12 @@ class DatasetProcessor:
 
     def target_encode_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.TargetEncoder` to the columns specified with the `targetEncode`
+        Applies `sklearn.preprocessing.TargetEncoder` to the columns specified by the `targetEncode`
         parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns encoded.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns encoded.
         """
         if self.target_encode:
             encoder = TargetEncoder(random_state=1, cv=3)
@@ -277,7 +277,7 @@ class DatasetProcessor:
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the target column encoded.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the target column encoded.
         """
         if self.label_encode:
             train_df = self.train_data.copy()
@@ -329,12 +329,12 @@ class DatasetProcessor:
 
     def standard_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.StandardScaler` to the columns specified with the `standardScale`
+        Applies `sklearn.preprocessing.StandardScaler` to the columns specified by the `standardScale`
         parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.standard_scale:
             scaler = StandardScaler()
@@ -344,11 +344,11 @@ class DatasetProcessor:
 
     def min_max_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.MinMaxScaler` to the columns specified with the `minMaxScale` parameter.
+        Applies `sklearn.preprocessing.MinMaxScaler` to the columns specified by the `minMaxScale` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.min_max_scale:
             scaler = MinMaxScaler()
@@ -358,11 +358,11 @@ class DatasetProcessor:
 
     def max_abs_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.MaxAbsScaler` to the columns specified with the `maxAbsScale` parameter.
+        Applies `sklearn.preprocessing.MaxAbsScaler` to the columns specified by the `maxAbsScale` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.max_abs_scale:
             scaler = MaxAbsScaler()
@@ -372,11 +372,11 @@ class DatasetProcessor:
 
     def robust_scale_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.RobustScaler` to the columns specified with the `robustScale` parameter.
+        Applies `sklearn.preprocessing.RobustScaler` to the columns specified by the `robustScale` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.robust_scale:
             scaler = RobustScaler(quantile_range=(25, 75))
@@ -386,12 +386,12 @@ class DatasetProcessor:
 
     def power_transform_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.PowerTransformer` using the yeo-johnson method to the columns specified
-        with the `powerTransform` parameter.
+        Applies `sklearn.preprocessing.PowerTransformer` using the Yeo-Johnson method to the columns specified
+        by the `powerTransform` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.power_transform:
             scaler = PowerTransformer(method="yeo-johnson")
@@ -402,11 +402,11 @@ class DatasetProcessor:
     def quantile_transform_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Applies `sklearn.preprocessing.QuantileTransformer` with `output_distribution = "uniform"`
-        to the columns specified with the `quantileTransform` parameter.
+        to the columns specified by the `quantileTransform` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.quantile_transform:
             scaler = QuantileTransformer(output_distribution="uniform")
@@ -417,11 +417,11 @@ class DatasetProcessor:
     def quantile_transform_normal_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Applies `sklearn.preprocessing.QuantileTransformer` with `output_distribution = "normal"`
-        to the columns specified with the `quantileTransformNormal` parameter.
+        to the columns specified by the `quantileTransformNormal` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.quantile_transform_normal:
             scaler = QuantileTransformer(output_distribution="normal")
@@ -431,11 +431,11 @@ class DatasetProcessor:
 
     def normalize_columns(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Applies `sklearn.preprocessing.Normalizer` to the columns specified with the `normalize` parameter.
+        Applies `sklearn.preprocessing.Normalizer` to the columns specified by the `normalize` parameter.
 
         Returns:
         --------
-            (pd.DataFrame, pd.DataFrame): Training and testing splits with the specified columns regularized.
+            (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.normalize:
             scaler = Normalizer()
@@ -443,14 +443,14 @@ class DatasetProcessor:
 
         return self.train_data, self.test_data
 
-    def save_dataframe(
+    def save_data(
         self,
         save_directory: Path | str,
         file_format: Literal["parquet", "csv", "json", "pkl"] = "parquet",
         file_name_ending: str = "",
     ) -> Path:
         """
-        Saves the data to a file in the specified format.
+        Recombined the train and test split and saves the data to a file using the specified format.
 
         Args:
         -----
@@ -477,41 +477,43 @@ class DatasetProcessor:
             file_count += 1
 
         try:
+            df = pd.concat([self.train_data, self.test_data]).sort_index()
+        except Exception:
+            logger.error("Could not recombine the train and test data in order to save it.")
+            raise
+
+        try:
             match file_format:
                 case "parquet":
-                    self.data.to_parquet(file_path, index=False, compression="gzip")
+                    df.to_parquet(file_path, index=False, compression="gzip")
                 case "csv":
-                    self.data.to_csv(file_path, index=False)
+                    df.to_csv(file_path, index=False)
                 case "pkl":
-                    self.data.to_pickle(file_path)
+                    df.to_pickle(file_path)
                 case "json":
-                    self.data.to_json(file_path, orient="records")
+                    df.to_json(file_path, orient="records")
                 case _:
                     raise ValueError(
                         "Invalid `file_format` provided. Must be one of: 'parquet', 'csv', 'json', 'pkl'."
                     )
             logger.info(f"Data saved to: {file_path}")
         except FileNotFoundError:
-            logger.exception(f"Could not save dataset to {file_path}.")
+            logger.error(f"Could not save data to {file_path}.")
+            raise
 
         return file_path
 
     def split_target(self) -> SplitDataTuple:
         """
-        Separates the target column from the features and splits both into training and testing sets
-        using scikit-learn's `train_test_split` function.
-
-        Args:
-        -----
-            test_size (float, optional): Proportion of the data to be used for testing. Defaults to 0.2.
+        Separates the target column from the features for both the train and test data.
 
         Returns:
         --------
             SplitDataTuple:
-                pd.DataFrame: Training data for features.
-                pd.DataFrame: Testing data for features.
-                pd.DataFrame | pd.Series: Training data for target variable.
-                pd.DataFrame | pd.Series: Testing data for target variable.
+                pd.DataFrame: Training split features.
+                pd.DataFrame: Testing split features.
+                pd.DataFrame | pd.Series: Training split target values.
+                pd.DataFrame | pd.Series: Testing split target values.
         """
         X_train = self.train_data
         y_train = X_train.pop(self.target)
@@ -572,10 +574,10 @@ class DatasetProcessor:
         Returns:
         --------
             SplitDataTuple:
-                pd.DataFrame: Training data for features.
-                pd.DataFrame: Testing data for features.
-                pd.DataFrame | pd.Series: Training data for target variable.
-                pd.DataFrame | pd.Series: Testing data for target variable.
+                pd.DataFrame: Training split features.
+                pd.DataFrame: Testing split features.
+                pd.DataFrame | pd.Series: Training split target values.
+                pd.DataFrame | pd.Series: Testing split target values.
         """
         if not isinstance(save_original, bool):
             raise ValueError("`save_original` must be a boolean.")
@@ -583,7 +585,7 @@ class DatasetProcessor:
             raise ValueError("`save_processed` must be a boolean.")
 
         if save_original:
-            self.save_dataframe(save_directory=save_directory, file_name_ending="-original")
+            self.save_data(save_directory=save_directory, file_name_ending="-original")
 
         self.drop_columns()
         self.handle_nan()
@@ -601,7 +603,7 @@ class DatasetProcessor:
         self.normalize_columns()
 
         if save_processed:
-            self.save_dataframe(save_directory=save_directory, file_name_ending="-processed")
+            self.save_data(save_directory=save_directory, file_name_ending="-processed")
 
         return self.split_target()
 

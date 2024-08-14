@@ -378,7 +378,7 @@ def process_models(
     Args:
     -----
         params_list (ParamsInput): A list of dictionaries containing model parameters.
-        split_data (SplitDataTuple): A tuple containing the training and testing data.
+        split_data (SplitDataTuple): A tuple containing the training and testing data split by features and target.
         save_directory (Path): The directory to save the results to.
 
     Raises:

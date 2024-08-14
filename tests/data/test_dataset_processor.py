@@ -228,8 +228,8 @@ class TestDatasetProcessor:
 
         processor = create_dataset_processor(none_data, dataset_params)
         processor.handle_nan()
-
-        assert "Missing values found in DataFrame" in caplog.text
+ 
+        assert "Missing values found in data" in caplog.text
 
     def test_split_target(self):
         processor = create_dataset_processor(self.data, self.data_params)
@@ -246,7 +246,7 @@ class TestDatasetProcessor:
         processor = create_dataset_processor(self.data, self.data_params)
 
         try:
-            processor.save_dataframe(save_directory="save_testing")
+            processor.save_data(save_directory="save_testing")
             assert Path("save_testing/integer_data.parquet").exists()
 
             df = pd.read_parquet("save_testing/integer_data.parquet")
@@ -270,8 +270,8 @@ class TestDatasetProcessor:
 
             # Save the DataFrames to the same directory and check that they are saved with different names
             processor1.drop_columns()
-            processor1.save_dataframe("name_save_testing")
-            processor2.save_dataframe("name_save_testing")
+            processor1.save_data("name_save_testing")
+            processor2.save_data("name_save_testing")
 
             assert Path("name_save_testing/name_test.parquet").exists()
             assert Path("name_save_testing/name_test-1.parquet").exists()
