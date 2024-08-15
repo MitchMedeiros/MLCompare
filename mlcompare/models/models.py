@@ -10,8 +10,17 @@ from typing import Any, Generator, Literal, TypeAlias
 
 import pandas as pd
 from pydantic import BaseModel
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    r2_score,
+    recall_score,
+    root_mean_squared_error,
+)
 
+from ..data.dataset_processor import validate_save_directory
 from ..data.split_data import SplitDataTuple
 from ..params_reader import ParamsInput, ParamsReader
 
@@ -44,7 +53,7 @@ class LibraryModel(ABC, BaseModel):
         name (str): Class name of the model. Ex: RandomForestRegressor.
         module (str | None): Module containing the model class if it's not imported at the library level.
         params (dict | None): Parameters to pass to the model class constructor if any.
-        _ml_model (Any): The model object instantiated from the library, accessed by the `train` and `predict` methods.
+        _ml_model (Any): Model object instantiated from the library, accessed by the `train` and `predict` methods.
     """
 
     @abstractmethod
@@ -228,7 +237,7 @@ class TensorflowModel(LibraryModel):
         name (str): Class name of the model. Ex: XGBRegressor.
         module (str | None): Module containing the model class if it's not imported at the library level.
         params (dict | None): Parameters to pass to the model class constructor if any.
-        _ml_model (Any): The instantiated machine learning model, accessed by the `train` and `predict` methods.
+        _ml_model (Any): Instantiated machine learning model, accessed by the `train` and `predict` methods.
     """
 
     _library = "tensorflow"
@@ -257,13 +266,13 @@ class ModelFactory:
 
     Attributes:
     -----------
-        params_list (list[dict[str, Any]] | Path): List of dictionaries containing dataset parameters or a Path to
+        params_list (list[dict[str, Any]] | str | Path): List of dictionaries containing dataset parameters or a path to
         a .json file with one. For a list of keys required in each dictionary, see below:
 
         Required keys:
         - `library` (Literal["sklearn", "xgboost", "pytorch", "tensorflow", "custom"]): The library to use.
-        - `module` (str): The module containing the model class.
-        - `name` (str): The name of the model class.
+        - `module` (str): Module containing the model class.
+        - `name` (str): Name of the model class.
 
         Optional keys:
         - `params` (dict | None): The parameters to pass to the model class constructor
@@ -282,7 +291,7 @@ class ModelFactory:
 
         Yields:
         -------
-            MLModelType: An instance of a LibraryModel child class.
+            MLModelType: Instance of a LibraryModel child class.
         """
         for params in self.params_list:
             yield ModelFactory.create(**params)
@@ -294,7 +303,7 @@ class ModelFactory:
 
         Args:
         -----
-            library (LibraryNames): The type of dataset to create.
+            library (LibraryNames): Type of dataset to create.
             **kwargs: Arbitrary keyword arguments to be passed to the dataset class constructor.
 
         Returns:
@@ -326,28 +335,101 @@ class ModelFactory:
 
 
 def evaluate_prediction(
-    y_test, y_pred, model_name: str, data_split: Literal["train", "test"] = "test"
+    y_test,
+    y_pred,
+    model_name: str,
+    task_type: Literal["classification", "regression"],
+    data_split: Literal["train", "test"] = "test",
 ) -> dict[str, Any]:
-    r2 = r2_score(y_test, y_pred)
-    rmse = mean_squared_error(y_test, y_pred)
-    return {
-        "model": model_name,
-        "data_split": data_split,
-        "r2_score": r2,
-        "rmse": rmse,
-    }
-
-
-def append_json(results: dict[str, float]) -> None:
     """
-    Append the results of a model evaluation to a JSON file.
+    Evaluate the predictions of a model using several metrics from sklearn.metrics.
 
     Args:
     -----
-        results (dict[str, float]): The results of the model evaluation.
-        save_directory (Path): The directory to save the results to.
+        y_test: True target values.
+        y_pred: Predicted target values.
+        model_name (str): Name of the model.
+        task_type (Literal["classification", "regression"]): Type of data the model is making predictions for.
+        data_split (Literal["train", "test"]): Data split used for evaluation.
+
+    Returns:
+    --------
+        dict[str, Any]: A dictionary containing the evaluation metrics.
     """
-    file_path = Path(__file__) / "model_results.json"
+    if task_type not in ["classification", "regression"]:
+        raise ValueError("Task type must be one of 'classification' or 'regression'.")
+
+    if task_type == "regression":
+        determined_task_type = "regression"
+    else:
+        if y_test.dropna().nunique() <= 2:
+            determined_task_type = "binary"
+        else:
+            determined_task_type = "multiclass"
+
+    match determined_task_type:
+        case "binary":
+            accuracy = accuracy_score(y_test, y_pred)
+            balanced_accuracy = balanced_accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred)
+            recall = recall_score(y_test, y_pred)
+            precision = precision_score(y_test, y_pred)
+
+            return {
+                "model": model_name,
+                "data split": data_split,
+                "accuracy": accuracy,  # balanced classification
+                "balanced accuracy": balanced_accuracy,  # imbalanced classification
+                "F1": f1,  # imbalanced classification
+                "recall": recall,  # classification focused on minimizing false negatives
+                "precision": precision,  # classification focused on minimizing false positives
+            }
+        case "multiclass":
+            accuracy = accuracy_score(y_test, y_pred)
+            balanced_accuracy = balanced_accuracy_score(y_test, y_pred)
+            f1_weighted = f1_score(y_test, y_pred, average="weighted")
+            f1_macro = f1_score(y_test, y_pred, average="macro")
+            recall_weighted = recall_score(y_test, y_pred, average="weighted")
+            recall_macro = recall_score(y_test, y_pred, average="macro")
+            precision_weighted = precision_score(y_test, y_pred, average="weighted")
+            precision_macro = precision_score(y_test, y_pred, average="macro")
+
+            return {
+                "model": model_name,
+                "data split": data_split,
+                "accuracy": accuracy,
+                "balanced accuracy": balanced_accuracy,
+                "F1 weighted-average": f1_weighted,
+                "F1 macro-average": f1_macro,
+                "recall weighted-average": recall_weighted,
+                "recall macro-average": recall_macro,
+                "precision weighted-average": precision_weighted,
+                "precision macro-average": precision_macro,
+            }
+        case "regression":
+            r2 = r2_score(y_test, y_pred)
+            rmse = root_mean_squared_error(y_test, y_pred)
+
+            return {
+                "model": model_name,
+                "data split": data_split,
+                "R2": r2,
+                "RMSE": rmse,
+            }
+        case _:
+            raise ValueError("Task type must be one of 'binary', 'multiclass', or 'regression'.")
+
+
+def append_json(results: dict[str, float], save_directory: str | Path) -> None:
+    """
+    Append the results of model evaluation to a JSON file.
+
+    Args:
+    -----
+        results (dict[str, float]): Results of the model evaluation.
+    """
+    save_directory = validate_save_directory(save_directory)
+    file_path = save_directory / "model_results.json"
 
     try:
         with open(file_path, "r") as file:
@@ -356,12 +438,12 @@ def append_json(results: dict[str, float]) -> None:
         data = []
 
     if not isinstance(data, list):
-        raise ValueError("The existing data in the JSON file is not a list")
+        raise ValueError("The existing data in the JSON file is not a list.")
 
     if isinstance(results, dict):
         data.append(results)
     else:
-        raise ValueError("`results` should be a dictionary")
+        raise ValueError("`results` should be a dictionary.")
 
     with open(file_path, "w") as file:
         json.dump(data, file, indent=4)
@@ -370,16 +452,17 @@ def append_json(results: dict[str, float]) -> None:
 def process_models(
     params_list: ParamsInput,
     split_data: SplitDataTuple,
-    save_directory: Path,
+    task_type: Literal["classification", "regression"],
+    save_directory: str | Path,
 ) -> None:
     """
     Train and evaluate models on a dataset.
 
     Args:
     -----
-        params_list (ParamsInput): A list of dictionaries containing model parameters.
-        split_data (SplitDataTuple): A tuple containing the training and testing data split by features and target.
-        save_directory (Path): The directory to save the results to.
+        params_list (ParamsInput): List of dictionaries containing model parameters.
+        split_data (SplitDataTuple): Tuple containing the training and testing data split by features and target.
+        task_type (Literal["classification", "regression"]): Type of data the model is making predictions for.
 
     Raises:
     -------
@@ -391,9 +474,14 @@ def process_models(
     for model in models:
         try:
             model.train(X_train, y_train)
-            prediction = model.predict(X_test)
-            model_results = evaluate_prediction(y_test, prediction, model._ml_model.__class__.__name__)
-            append_json(model_results)
+            y_pred = model.predict(X_test)
+            model_results = evaluate_prediction(
+                y_test,
+                y_pred,
+                model._ml_model.__class__.__name__,
+                task_type,
+            )
+            append_json(model_results, save_directory)
         except Exception:
             logger.error(f"Failed to process model: {model._ml_model.__class__.__name__}")
             raise
