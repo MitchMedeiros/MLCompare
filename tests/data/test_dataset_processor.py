@@ -48,12 +48,9 @@ class TestDatasetProcessor:
 
     def test_init(self):
         processor = create_dataset_processor(self.data, self.data_params)
+        recombined_df = pd.concat([processor.train_data, processor.test_data]).sort_index()
 
-        assert processor.data.equals(pd.DataFrame(self.data)) is True
-        assert (
-            pd.concat([processor.train_data, processor.test_data]).sort_index().equals(processor.data)
-            is True
-        )
+        assert recombined_df.equals(pd.DataFrame(self.data)) is True
 
     def test_init_empty_file(self):
         empty_data = {"A": [], "B": []}
@@ -228,7 +225,7 @@ class TestDatasetProcessor:
 
         processor = create_dataset_processor(none_data, dataset_params)
         processor.handle_nan()
- 
+
         assert "Missing values found in data" in caplog.text
 
     def test_split_target(self):
@@ -320,12 +317,12 @@ class TestDatasetProcessor:
     def test_process_datasets(self):
         params_list = [
             {"type": "local", "path": "test1.csv", "target": "C", "drop": ["A"]},
-            {"type": "local", "path": "test2.csv", "target": "F", "drop": ["D"]},
+            {"type": "local", "path": "test2.csv", "target": "F", "drop": ["A"]},
         ]
 
         df = pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
         df.to_csv("test1.csv", index=False)
-        df = pd.DataFrame({"D": [7, 8], "E": [9, 10], "F": [11, 12]})
+        df = pd.DataFrame({"A": [7, 8], "E": [9, 10], "F": [11, 12]})
         df.to_csv("test2.csv", index=False)
 
         try:
@@ -341,6 +338,7 @@ class TestDatasetProcessor:
                 assert isinstance(X_test, pd.DataFrame)
                 assert isinstance(y_train, pd.Series)
                 assert isinstance(y_test, pd.Series)
+                assert "A" not in X_train.columns
                 assert X_train.empty is False
                 assert X_test.empty is False
                 assert y_train.empty is False

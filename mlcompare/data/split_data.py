@@ -32,13 +32,13 @@ class SplitData(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-def load_split_data(load_path: Path | str) -> SplitDataTuple:
+def load_split_data(load_path: str | Path) -> SplitDataTuple:
     """
     Loads a SplitData object from a pickle file and returns the data it was holding.
 
     Args:
     -----
-        load_path (Path): Path to a pickle file of a SplitData object.
+        load_path (str | Path): Path to a pickle file contain a SplitData object.
 
     Returns:
     --------

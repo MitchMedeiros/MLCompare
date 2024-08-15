@@ -103,7 +103,7 @@ class DatasetProcessor:
             raise ValueError("`test_size` must be between 0 and 1.")
 
         try:
-            X, y = train_test_split(data, test_size=test_size, random_state=0)
+            X, y = train_test_split(data, test_size=test_size, random_state=42)
 
             logger.info(f"Data successfully split: {X.shape=}, {y.shape=}. Training split:\n{X.head(3)}")
             self.train_data = X
@@ -259,7 +259,7 @@ class DatasetProcessor:
             (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns encoded.
         """
         if self.target_encode:
-            encoder = TargetEncoder(random_state=1, cv=3)
+            encoder = TargetEncoder(random_state=42, cv=3)
             self.train_data[self.target_encode] = encoder.fit_transform(
                 self.train_data[self.target_encode], self.train_data[self.target]
             )
@@ -307,7 +307,7 @@ class DatasetProcessor:
             self.test_data = test_df
         return self.train_data, self.test_data
 
-    def _standardize_columns(
+    def _rescale_columns(
         self,
         scaler: (
             StandardScaler
@@ -338,7 +338,7 @@ class DatasetProcessor:
         """
         if self.standard_scale:
             scaler = StandardScaler()
-            self._standardize_columns(scaler=scaler, columns=self.standard_scale)
+            self._rescale_columns(scaler=scaler, columns=self.standard_scale)
 
         return self.train_data, self.test_data
 
@@ -352,7 +352,7 @@ class DatasetProcessor:
         """
         if self.min_max_scale:
             scaler = MinMaxScaler()
-            self._standardize_columns(scaler=scaler, columns=self.min_max_scale)
+            self._rescale_columns(scaler=scaler, columns=self.min_max_scale)
 
         return self.train_data, self.test_data
 
@@ -366,7 +366,7 @@ class DatasetProcessor:
         """
         if self.max_abs_scale:
             scaler = MaxAbsScaler()
-            self._standardize_columns(scaler=scaler, columns=self.max_abs_scale)
+            self._rescale_columns(scaler=scaler, columns=self.max_abs_scale)
 
         return self.train_data, self.test_data
 
@@ -380,7 +380,7 @@ class DatasetProcessor:
         """
         if self.robust_scale:
             scaler = RobustScaler(quantile_range=(25, 75))
-            self._standardize_columns(scaler=scaler, columns=self.robust_scale)
+            self._rescale_columns(scaler=scaler, columns=self.robust_scale)
 
         return self.train_data, self.test_data
 
@@ -395,7 +395,7 @@ class DatasetProcessor:
         """
         if self.power_transform:
             scaler = PowerTransformer(method="yeo-johnson")
-            self._standardize_columns(scaler=scaler, columns=self.power_transform)
+            self._rescale_columns(scaler=scaler, columns=self.power_transform)
 
         return self.train_data, self.test_data
 
@@ -409,8 +409,8 @@ class DatasetProcessor:
             (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.quantile_transform:
-            scaler = QuantileTransformer(output_distribution="uniform")
-            self._standardize_columns(scaler=scaler, columns=self.quantile_transform)
+            scaler = QuantileTransformer(output_distribution="uniform", random_state=42)
+            self._rescale_columns(scaler=scaler, columns=self.quantile_transform)
 
         return self.train_data, self.test_data
 
@@ -424,8 +424,8 @@ class DatasetProcessor:
             (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.quantile_transform_normal:
-            scaler = QuantileTransformer(output_distribution="normal")
-            self._standardize_columns(scaler=scaler, columns=self.quantile_transform_normal)
+            scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+            self._rescale_columns(scaler=scaler, columns=self.quantile_transform_normal)
 
         return self.train_data, self.test_data
 
@@ -438,14 +438,14 @@ class DatasetProcessor:
             (pd.DataFrame, pd.DataFrame): Train and test split with the specified columns regularized.
         """
         if self.normalize:
-            scaler = Normalizer()
-            self._standardize_columns(scaler=scaler, columns=self.normalize)
+            scaler = Normalizer(norm="l2")
+            self._rescale_columns(scaler=scaler, columns=self.normalize)
 
         return self.train_data, self.test_data
 
     def save_data(
         self,
-        save_directory: Path | str,
+        save_directory: str | Path,
         file_format: Literal["parquet", "csv", "json", "pkl"] = "parquet",
         file_name_ending: str = "",
     ) -> Path:
@@ -454,7 +454,7 @@ class DatasetProcessor:
 
         Args:
         -----
-            save_directory (Path | str): Directory to save the data to.
+            save_directory (str | Path): Directory to save the data to.
             file_format (Literal["parquet", "csv", "json", "pkl"], optional): Format to use when
             saving the data. Defaults to "parquet".
             file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
@@ -527,13 +527,13 @@ class DatasetProcessor:
         )
         return X_train, X_test, y_train, y_test
 
-    def split_and_save_data(self, save_directory: Path | str) -> Path:
+    def split_and_save_data(self, save_directory: str | Path) -> Path:
         """
         Splits the data and saves it to a single pickle file as a SplitData object.
 
         Args:
         -----
-            save_directory (Path | str): Directory to save the SplitData object to.
+            save_directory (str | Path): Directory to save the SplitData object to.
 
         Returns:
         --------
@@ -557,7 +557,7 @@ class DatasetProcessor:
 
     def process_dataset(
         self,
-        save_directory: Path | str,
+        save_directory: str | Path,
         save_original: bool = True,
         save_processed: bool = True,
     ) -> SplitDataTuple:
@@ -567,7 +567,7 @@ class DatasetProcessor:
 
         Args:
         -----
-            save_directory (Path | str): The directory to save the data to.
+            save_directory (str | Path): The directory to save the data to.
             save_original (bool): Whether to save the original data.
             save_processed (bool): Whether to save the processed, nonsplit data.
 
@@ -610,7 +610,7 @@ class DatasetProcessor:
 
 def process_datasets(
     params_list: ParamsInput,
-    save_directory: Path | str,
+    save_directory: str | Path,
     save_original: bool = True,
     save_processed: bool = True,
 ) -> Generator[SplitDataTuple, None, None]:
@@ -619,8 +619,8 @@ def process_datasets(
 
     Args:
     -----
-        params_list (ParamsInput): A list of dictionaries containing dataset parameters.
-        save_directory (Path): Directory to save the data to.
+        params_list (ParamsInput): List of dictionaries containing dataset parameters.
+        save_directory (str | Path): Directory to save the data to.
         save_original (bool): Whether to save the original data.
         save_processed (bool): Whether to save the processed, nonsplit data.
 
@@ -641,7 +641,7 @@ def process_datasets(
 
 def process_datasets_to_files(
     params_list: ParamsInput,
-    save_directory: Path | str,
+    save_directory: str | Path,
     save_original: bool = True,
     save_processed: bool = True,
 ) -> list[Path]:
@@ -650,8 +650,8 @@ def process_datasets_to_files(
 
     Args:
     -----
-        datasets (list[KaggleDataset | LocalDataset]): A list of datasets to process.
-        data_directory (Path): Directory to save the original and processed data.
+        datasets (list[KaggleDataset | LocalDataset]): List of datasets to process.
+        data_directory (str | Path): Directory to save the original and processed data.
         save_original (bool): Whether to save the original data.
         save_processed (bool): Whether to save the processed, nonsplit data.
 

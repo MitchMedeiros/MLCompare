@@ -287,7 +287,7 @@ class DatasetFactory:
             target (str): Name of the target column in the dataset.
 
         Additional required keys for 'local' datasets:
-            file_path (str): Path to the local dataset file. It can be relative or absolute.
+            file_path (str | Path): Path to the local dataset file. It can be relative or absolute.
 
         Additional required keys for 'kaggle' datasets:
             user (str): Kaggle username of the dataset owner.
@@ -320,7 +320,7 @@ class DatasetFactory:
 
     @staticmethod
     def create(
-        type: Literal["local", "kaggle", "hugging face", "huggingface", "openml"],
+        type: Literal["local", "kaggle", "hugging face", "huggingface", "huggingFace", "openml"],
         **kwargs,
     ) -> DatasetType:
         """
@@ -345,7 +345,7 @@ class DatasetFactory:
                 return LocalDataset(**kwargs)
             case "kaggle":
                 return KaggleDataset(**kwargs)
-            case "hugging face" | "huggingface":
+            case "hugging face" | "huggingface" | "huggingFace":
                 return HuggingFaceDataset(**kwargs)
             case "openml":
                 return OpenMLDataset(**kwargs)

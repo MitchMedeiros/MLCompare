@@ -151,6 +151,10 @@ class TestLocalDataset:
         with pytest.raises(ValidationError):
             LocalDataset(path=123, target="target")
 
+    def test_no_path(self):
+        with pytest.raises(ValidationError):
+            LocalDataset(target="target")
+
     def test_validate_data_method_explicitly(self):
         dataset = LocalDataset(path=self.test_path, target="target")
         dataset.validate_data()  # Will throw an error if it fails

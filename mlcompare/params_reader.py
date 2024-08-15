@@ -7,7 +7,7 @@ from typing import Any, TypeAlias
 
 logger = logging.getLogger(__name__)
 
-ParamsInput: TypeAlias = str | Path | list[dict[str, Any]]
+ParamsInput: TypeAlias = list[dict[str, Any]] | str | Path
 """User input for pipelines, containing information to load and process datasets or to create ml models."""
 
 
@@ -35,7 +35,7 @@ class ParamsReader:
 
         Raises:
         -------
-            TypeError: If the params_list is not a list of dictionaries or a Path to a JSON file.
+            TypeError: If the params_list is not a list of dictionaries or a path to a JSON file.
             FileNotFoundError: If the specified file does not exist.
             json.JSONDecodeError: If there is an error decoding the JSON file.
         """
@@ -55,11 +55,11 @@ class ParamsReader:
 
         Args:
         -----
-            file_path (Path): The path to the JSON file.
+            file_path (Path): Path to the JSON file.
 
         Returns:
         --------
-            List[dict[str, Any]]: A list of dictionaries containing parameters.
+            List[dict[str, Any]]: List of dictionaries containing parameters.
 
         Raises:
         -------
