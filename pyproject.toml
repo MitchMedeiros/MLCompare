@@ -79,7 +79,7 @@ pattern = "^__version__ = ['\"](?P<version>[^'\"]*)['\"]"
 [tool.pytest.ini_options]
 testpaths = "tests"
 xfail_strict = true
-filterwarnings = ["ignore::DeprecationWarning:kaggle.rest"]
+filterwarnings = ["ignore::DeprecationWarning:kaggle.rest", "ignore::UserWarning:sklearn.preprocessing"]
 
 [tool.ruff]
 line-length = 105

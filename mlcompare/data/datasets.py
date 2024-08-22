@@ -2,7 +2,9 @@ from __future__ import annotations as _annotations
 
 import logging
 import shutil
+import sqlite3
 from abc import ABC, abstractmethod
+from io import StringIO
 from pathlib import Path
 from typing import Generator, Literal, TypeAlias
 
@@ -179,18 +181,11 @@ class KaggleDataset(BaseDataset):
             ValueError: If there's no Kaggle dataset files for the provided user and dataset names.
             ValueError: If the file name provided doesn't match any of the files in the matched dataset.
         """
-        from io import StringIO
-
         import kaggle
         from kaggle.api.kaggle_api_extended import ApiException
 
         try:
             data = kaggle.api.datasets_download_file(self.user, self.dataset, self.file)
-
-            file_like = StringIO(data)
-            df = pd.read_csv(file_like)
-            logger.info("Data successfully downloaded")
-            return df
         except OSError:
             # Should never occur since empty environment variables are added in the `__init__.py`,
             # which should be sufficient for `dataset_downloads_file`.
@@ -214,8 +209,64 @@ class KaggleDataset(BaseDataset):
                     f"Dataset: {self.user}/{self.dataset} was successfully found but doesn't "
                     f"contain any file named: {self.file}"
                 )
+            raise
+        except Exception:
+            logger.error("An unknown error occurred while downloading the dataset.")
+            raise
 
-        raise Exception("An unknown error occurred while downloading the dataset.")
+        data_file_type = Path(self.file).suffix
+
+        match data_file_type:
+            case ".csv":
+                try:
+                    file_like_data = StringIO(data)
+                    df = pd.read_csv(file_like_data)
+                except Exception:
+                    logger.error("Error converting CSV data to a DataFrame.")
+                    raise
+            case ".sqlite":
+                try:
+                    conn = sqlite3.connect("your_database.sqlite")
+                    cursor = conn.cursor()
+
+                    # List all tables
+                    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                    tables = cursor.fetchall()
+
+                    # Initialize variables to track the table with the most rows
+                    max_rows = 0
+                    largest_table = None
+
+                    # Loop through all tables and find the one with the most rows
+                    for table in tables:
+                        table_name = table[0]
+                        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                        row_count = cursor.fetchone()[0]
+
+                        if row_count > max_rows:
+                            max_rows = row_count
+                            largest_table = table_name
+
+                    if largest_table:
+                        df = pd.read_sql_query(f"SELECT * FROM {largest_table}", conn)
+                        conn.close()
+                    else:
+                        raise ValueError("No tables found in the SQLite database.")
+                except Exception:
+                    logger.error("SQLite data could not be converted to a DataFrame.")
+                    raise
+            case ".json":
+                try:
+                    df = pd.DataFrame(data)
+                except Exception:
+                    raise ValueError("JSON data could not be converted to a DataFrame.")
+            case _:
+                raise ValueError(
+                    "Only .csv, .json, and .sqlite files are currently supported by MLCompare for Kaggle datasets."
+                )
+
+        logger.info("Data successfully downloaded")
+        return df
 
 
 class HuggingFaceDataset(BaseDataset):

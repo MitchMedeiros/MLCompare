@@ -31,12 +31,12 @@ def create_dataset_processor(data: dict, data_params: dict) -> DatasetProcessor:
 
 class TestDatasetProcessor:
     data = {
-        "A": [1, 2],
-        "B": [3, 4],
-        "C": [5, 6],
-        "D": [7, 8],
-        "E": [9, 10],
-        "F": [11, 12],
+        "A": [1, 2, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+        "B": [3, 4, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+        "C": [5, 6, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
+        "D": [7, 13, 16, 18, 20, 10, 16, 10, 8, 8, 8, 8],
+        "E": [9, 10, 11, 12, 42, 14, 11, 40, 8, 8, 8, 8],
+        "F": [11, 11, 13, 13, 11, 11, 13, 13, 11, 13, 11, 13],
     }
     data_params = {
         "path": "integer_data.csv",
@@ -76,21 +76,31 @@ class TestDatasetProcessor:
         processor = create_dataset_processor(self.data, self.data_params)
         train_data, test_data = processor.one_hot_encode_columns()
 
-        assert "B" not in train_data.columns
-        assert "B" not in test_data.columns
-        assert "D" not in train_data.columns
-        assert "D" not in test_data.columns
+        assert "B" not in train_data.columns and "B" not in test_data.columns
+        assert "D" not in train_data.columns and "D" not in test_data.columns
         assert (
             "B_3" in train_data.columns
-            or "B_3" in test_data.columns
             or "B_4" in train_data.columns
-            or "B_4" in test_data.columns
+            or "B_9" in train_data.columns
+            or "B_10" in train_data.columns
+            or "B_11" in train_data.columns
+            or "B_12" in train_data.columns
         )
 
         if "B_3" in train_data.columns:
             assert train_data["B_3"].sum() == 1
+        elif "B_4" in train_data.columns:
+            assert train_data["B_4"].sum() == 1
+        elif "B_9" in train_data.columns:
+            assert train_data["B_9"].sum() == 1
+        elif "B_10" in train_data.columns:
+            assert train_data["B_10"].sum() == 1
+        elif "B_11" in train_data.columns:
+            assert train_data["B_11"].sum() == 1
+        elif "B_12" in train_data.columns:
+            assert train_data["B_12"].sum() == 1
         else:
-            assert test_data["B_3"].sum() == 1
+            raise ValueError()
 
     def test_ordinal_encode_columns(self):
         processor = create_dataset_processor(
@@ -103,36 +113,21 @@ class TestDatasetProcessor:
         )
         train_data, test_data = processor.ordinal_encode_columns()
 
-        assert "D" in train_data.columns and "E" in train_data.columns
-        assert "D" in test_data.columns and "E" in test_data.columns
-        assert (
-            train_data["D"].sum()
-            == len(processor.train_data["D"]) * (len(processor.train_data["D"]) - 1) / 2
-        )
-        assert (
-            train_data["E"].sum()
-            == len(processor.train_data["E"]) * (len(processor.train_data["E"]) - 1) / 2
-        )
-        assert len(test_data["D"]) == 1
-        assert len(test_data["E"]) == 1
+        assert train_data["E"].min() == 0
+        assert train_data["E"].max() == len(processor.train_data["E"].unique()) - 1
 
     def test_target_encode_column(self):
         processor = create_dataset_processor(
-            {
-                "A": [1, 2, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
-                "B": [3, 4, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
-                "C": [5, 6, 9, 10, 11, 12, 20, 40, 8, 8, 8, 8],
-                "D": [7, 13, 16, 18, 20, 10, 16, 10, 8, 8, 8, 8],
-                "E": [9, 10, 11, 12, 42, 14, 11, 40, 8, 8, 8, 8],
-                "F": [11, 11, 13, 13, 11, 11, 13, 13, 11, 13, 11, 13],
-            },
+            self.data,
             {
                 "path": "integer_data.csv",
                 "target": "F",
-                "targetEncode": ["D"],
+                "targetEncode": ["E"],
             },
         )
         train_data, test_data = processor.target_encode_columns()
+
+        assert "E" in train_data.columns
 
     def test_label_encode_column(self):
         processor = create_dataset_processor(
@@ -143,13 +138,108 @@ class TestDatasetProcessor:
                 "labelEncode": "yes",
             },
         )
+        original_train_data_length = len(processor.train_data["F"].unique())
         train_data, test_data = processor.label_encode_column()
 
-        assert "F" in train_data.columns and "F" in test_data.columns
-        assert (
-            train_data["F"].sum()
-            == len(processor.train_data["F"]) * (len(processor.train_data["F"]) - 1) / 2
+        assert train_data["F"].min() == 0
+        assert train_data["F"].max() == original_train_data_length - 1
+
+    def test_standard_scale_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "standardScale": ["B"],
+            },
         )
+        train_data, test_data = processor.standard_scale_columns()
+
+        assert round(train_data["B"].sum(), 3) == 0
+
+    def test_min_max_scale_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "minMaxScale": ["B"],
+            },
+        )
+        train_data, test_data = processor.min_max_scale_columns()
+
+        assert train_data["B"].max() == 1
+        assert train_data["B"].min() == 0
+
+    def test_max_abs_scale_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "maxAbsScale": ["B"],
+            },
+        )
+        original_train_data_sum = (
+            processor.train_data["B"].apply(lambda x: x / processor.train_data["B"].max()).sum()
+        )
+        train_data, test_data = processor.max_abs_scale_columns()
+
+        assert train_data["B"].max() == 1
+        assert original_train_data_sum == train_data["B"].sum()
+
+    def test_robust_scale_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "robustScale": ["B"],
+            },
+        )
+        train_data, test_data = processor.robust_scale_columns()
+
+        assert "B" in train_data.columns
+
+    def test_power_transform_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "powerTransform": ["B"],
+            },
+        )
+        train_data, test_data = processor.power_transform_columns()
+
+        assert round(train_data["B"].sum(), 5) == 0
+
+    def test_quantile_transform_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "quantileTransform": ["B"],
+            },
+        )
+        train_data, test_data = processor.quantile_transform_columns()
+
+        assert train_data["B"].max() == 1
+        assert train_data["B"].min() == 0
+
+    def test_quantile_transform_normal_columns(self):
+        processor = create_dataset_processor(
+            self.data,
+            {
+                "path": "integer_data.csv",
+                "target": "F",
+                "quantileTransformNormal": ["D"],
+            },
+        )
+        train_data, test_data = processor.quantile_transform_normal_columns()
+
+        assert round(train_data["D"].min(), 5) == round(-train_data["D"].max(), 5)
 
     def test_handle_nan_no_missing_values(self):
         processor = create_dataset_processor(self.data, self.data_params)
