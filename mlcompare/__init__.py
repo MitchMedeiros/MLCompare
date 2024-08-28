@@ -7,7 +7,7 @@ from .data.datasets import DatasetFactory
 from .data.split_data import SplitData, load_split_data
 from .models.models import ModelFactory, process_models
 from .params_reader import ParamsReader
-from .pipelines import data_exploration_pipeline, full_pipeline
+from .pipelines import data_exploration_pipeline, data_pipeline, full_pipeline
 
 __version__ = "1.1.0"
 __title__ = "MLCompare"

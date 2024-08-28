@@ -436,6 +436,8 @@ def append_json(results: dict[str, float], save_directory: str | Path) -> None:
             data = json.load(file)
     except FileNotFoundError:
         data = []
+    except json.JSONDecodeError:
+        data = []
 
     if not isinstance(data, list):
         raise ValueError("The existing data in the JSON file is not a list.")

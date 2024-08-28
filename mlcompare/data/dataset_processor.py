@@ -323,6 +323,9 @@ class DatasetProcessor:
         self.train_data[columns] = scaler.fit_transform(self.train_data[columns])
         self.test_data[columns] = scaler.transform(self.test_data[columns])
 
+        # self.train_data[columns] = scaler.fit_transform(train_df[columns])
+        # self.test_data[columns] = scaler.transform(test_df[columns])
+
         logger.info(
             f"Columns: {columns} successfully regularized. Training split:\n{self.train_data.head(3)}"
         )
@@ -603,7 +606,9 @@ class DatasetProcessor:
         self.normalize_columns()
 
         if save_processed:
+            logger.info(f"Saving processed data:\n{self.train_data.head(5)}")
             self.save_data(save_directory=save_directory, file_name_ending="-processed")
+            logger.info(f"Processed data saved:\n{self.train_data.head(5)}")
 
         return self.split_target()
 

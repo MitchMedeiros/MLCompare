@@ -28,7 +28,6 @@ def create_csv_file(file_path: str | Path) -> None:
     data.to_csv(file_path, index=False)
 
 
-# Test df_from_suffix Function
 @pytest.mark.parametrize(
     "file_type,reader_func",
     [
