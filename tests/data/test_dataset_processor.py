@@ -357,8 +357,8 @@ class TestDatasetProcessor:
 
             # Save the DataFrames to the same directory and check that they are saved with different names
             processor1.drop_columns()
-            processor1.save_data("name_save_testing")
-            processor2.save_data("name_save_testing")
+            processor1.save_data("name_save_testing", overwrite=False)
+            processor2.save_data("name_save_testing", overwrite=False)
 
             assert Path("name_save_testing/name_test.parquet").exists()
             assert Path("name_save_testing/name_test-1.parquet").exists()

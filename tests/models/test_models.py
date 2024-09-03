@@ -292,3 +292,50 @@ class TestModelFactory:
 
             for model in model_factory:
                 pass
+
+    def test_incorrect_module(self):
+        with pytest.raises(ModuleNotFoundError):
+            model_factory = ModelFactory(
+                [
+                    {
+                        "library": "sklearn",
+                        "module": "asdf",
+                        "name": "RandomForestClassifier",
+                    }
+                ]
+            )
+
+            for model in model_factory:
+                pass
+
+    def test_incorrect_model_paras_type(self):
+        with pytest.raises(ValidationError):
+            model_factory = ModelFactory(
+                [
+                    {
+                        "library": "sklearn",
+                        "module": "ensemble",
+                        "name": "RandomForestClassifier",
+                        "params": "asdf",
+                    }
+                ]
+            )
+
+            for model in model_factory:
+                pass
+
+    def test_incorrect_model_paras_key(self):
+        with pytest.raises(TypeError):
+            model_factory = ModelFactory(
+                [
+                    {
+                        "library": "sklearn",
+                        "module": "ensemble",
+                        "name": "RandomForestClassifier",
+                        "params": {"asdf": 1},
+                    }
+                ]
+            )
+
+            for model in model_factory:
+                pass

@@ -451,6 +451,7 @@ class DatasetProcessor:
         save_directory: str | Path,
         file_format: Literal["parquet", "csv", "json", "pkl"] = "parquet",
         file_name_ending: str = "",
+        overwrite: bool = True,
     ) -> Path:
         """
         Recombined the train and test split and saves the data to a file using the specified format.
@@ -474,10 +475,13 @@ class DatasetProcessor:
         save_directory = validate_save_directory(save_directory)
         file_path = save_directory / f"{self.save_name}{file_name_ending}.{file_format}"
 
-        file_count = 1
-        while file_path.exists():
-            file_path = save_directory / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
-            file_count += 1
+        if not overwrite:
+            file_count = 1
+            while file_path.exists():
+                file_path = (
+                    save_directory / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
+                )
+                file_count += 1
 
         try:
             df = pd.concat([self.train_data, self.test_data]).sort_index()
@@ -530,7 +534,7 @@ class DatasetProcessor:
         )
         return X_train, X_test, y_train, y_test
 
-    def split_and_save_data(self, save_directory: str | Path) -> Path:
+    def split_and_save_data(self, save_directory: str | Path, overwrite: bool = True) -> Path:
         """
         Splits the data and saves it to a single pickle file as a SplitData object.
 
@@ -548,10 +552,11 @@ class DatasetProcessor:
         save_directory = validate_save_directory(save_directory)
         file_path = save_directory / f"{self.save_name}-split.pkl"
 
-        file_count = 1
-        while file_path.exists():
-            file_path = save_directory / f"{self.save_name}-split-{file_count}.pkl"
-            file_count += 1
+        if not overwrite:
+            file_count = 1
+            while file_path.exists():
+                file_path = save_directory / f"{self.save_name}-split-{file_count}.pkl"
+                file_count += 1
 
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)
@@ -563,6 +568,7 @@ class DatasetProcessor:
         save_directory: str | Path,
         save_original: bool = True,
         save_processed: bool = True,
+        overwrite: bool = True,
     ) -> SplitDataTuple:
         """
         Performs all data processing steps based on the parameters provided to `DatasetProcessor`.
@@ -588,7 +594,9 @@ class DatasetProcessor:
             raise ValueError("`save_processed` must be a boolean.")
 
         if save_original:
-            self.save_data(save_directory=save_directory, file_name_ending="-original")
+            self.save_data(
+                save_directory=save_directory, file_name_ending="-original", overwrite=overwrite
+            )
 
         self.drop_columns()
         self.handle_nan()
@@ -606,9 +614,9 @@ class DatasetProcessor:
         self.normalize_columns()
 
         if save_processed:
-            logger.info(f"Saving processed data:\n{self.train_data.head(5)}")
-            self.save_data(save_directory=save_directory, file_name_ending="-processed")
-            logger.info(f"Processed data saved:\n{self.train_data.head(5)}")
+            self.save_data(
+                save_directory=save_directory, file_name_ending="-processed", overwrite=overwrite
+            )
 
         return self.split_target()
 

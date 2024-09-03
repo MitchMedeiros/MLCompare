@@ -18,7 +18,7 @@ def test_full_pipeline_regression():
             "target": "Revenue",
             "drop": ["Name"],
             "oneHotEncode": ["Location", "Cuisine", "Parking Availability"],
-            "standardScale": [
+            "robustScale": [
                 "Seating Capacity",
                 "Average Meal Price",
                 "Rating",
@@ -30,18 +30,9 @@ def test_full_pipeline_regression():
                 "Service Quality Score",
                 "Weekend Reservations",
                 "Weekday Reservations",
-                "Revenue",
+                "Number of Reviews",
             ],
         },
-        # {
-        #     "type": "kaggle",
-        #     "user": "anthonytherrien",
-        #     "dataset": "restaurant-revenue-prediction-dataset",
-        #     "file": "restaurant_data.csv",
-        #     "target": "Revenue",
-        #     "drop": ["Name"],
-        #     "oneHotEncode": ["Location", "Cuisine", "Parking Availability"],
-        # },
     ]
 
     models = [
@@ -49,31 +40,22 @@ def test_full_pipeline_regression():
             "library": "sklearn",
             "name": "LinearRegression",
         },
-        # {
-        #     "library": "sklearn",
-        #     "module": "linear_model",
-        #     "name": "LinearRegression",
-        # },
-        # {
-        #     "library": "sklearn",
-        #     "name": "RandomForestRegressor",
-        # },
-        # {
-        #     "library": "sklearn",
-        #     "module": "ensemble",
-        #     "name": "RandomForestRegressor",
-        #     "params": {"n_estimators": 100},
-        # },
-        # {
-        #     "library": "xgboost",
-        #     "name": "XGBRegressor",
-        # },
-        # {
-        #     "library": "xgboost",
-        #     "module": "sklearn",
-        #     "name": "XGBRegressor",
-        #     "params": {"n_estimators": 100},
-        # },
+        {
+            "library": "sklearn",
+            "name": "RandomForestRegressor",
+            "params": {"n_estimators": 100},
+        },
+        {
+            "library": "xgboost",
+            "name": "XGBRegressor",
+            "params": {
+                "n_estimators": 1000,
+                "max_depth": 7,
+                "eta": 0.1,
+                "subsample": 0.7,
+                "colsample_bytree": 0.8,
+            },
+        },
     ]
 
     full_pipeline(datasets, models, "regression")
@@ -83,39 +65,32 @@ def test_full_pipeline_classification():
     datasets = [
         {
             "type": "kaggle",
-            "user": "anthonytherrien",
-            "dataset": "restaurant-revenue-prediction-dataset",
-            "file": "restaurant_data.csv",
-            "target": "Revenue",
-            "drop": ["Name"],
-            "oneHotEncode": ["Location", "Cuisine", "Parking Availability"],
+            "user": "iabhishekofficial",
+            "dataset": "mobile-price-classification",
+            "file": "train.csv",
+            "target": "price_range",
         }
     ]
 
     models = [
         {
             "library": "sklearn",
-            "module": "sklearn.linear_model",
-            "name": "LinearRegression",
-            "params": {},
+            "name": "LinearSVC",
         },
         {
             "library": "sklearn",
-            "module": "sklearn.ensemble",
-            "name": "RandomForestRegressor",
+            "name": "RandomForestClassifier",
             "params": {"n_estimators": 100},
         },
         {
             "library": "xgboost",
-            "module": "xgboost",
-            "name": "XGBRegressor",
-            "params": {},
+            "name": "XGBClassifier",
         },
     ]
 
-    # full_pipeline(datasets, models, "classification")
+    full_pipeline(datasets, models, "classification")
 
 
-def test_data_pipeline():
-    # data_pipeline()
-    pass
+# def test_data_pipeline():
+#     # data_pipeline()
+#     pass

@@ -1,6 +1,7 @@
 from __future__ import annotations as _annotations
 
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -9,6 +10,23 @@ from .models.models import process_models
 from .params_reader import ParamsInput
 
 logger = logging.getLogger(__name__)
+
+
+def prepare_files(save_directory: str | Path = Path("pipeline_results")):
+    """
+    Prepare the directory for saving results by creating it if it doesn't exist and removing past model results.
+
+    Args:
+    -----
+        save_directory (str | Path, optional): Directory to save results to. Defaults to Path("pipeline_results").
+    """
+    if isinstance(save_directory, str):
+        save_directory = Path(save_directory)
+    save_directory.mkdir(exist_ok=True)
+
+    model_results_file = save_directory / "model_results.json"
+    if model_results_file.exists():
+        model_results_file.unlink()
 
 
 def data_exploration_pipeline():
@@ -45,7 +63,7 @@ def full_pipeline(
     custom_models: list[Any] | None = None,
     save_original_data: bool = True,
     save_processed_data: bool = True,
-    save_directory: str | Path = Path("pipeline_results"),
+    save_directory: str | Path | None = None,
 ) -> None:
     """
     Executes a full pipeline for training and evaluating multiple models on multiple datasets.
@@ -60,9 +78,10 @@ def full_pipeline(
         save_processed_data (bool, optional): Save cleaned datasets. Defaults to True.
         save_directory (str | Path, optional): Directory to save results to. Defaults to Path("pipeline_results").
     """
-    if isinstance(save_directory, str):
-        save_directory = Path(save_directory)
-    save_directory.mkdir(exist_ok=True)
+    if save_directory is None:
+        current_datetime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+        save_directory = Path(f"mlcompare-results-{current_datetime}")
+    # prepare_files(save_directory)
 
     split_data = process_datasets(
         dataset_params, save_directory, save_original_data, save_processed_data
