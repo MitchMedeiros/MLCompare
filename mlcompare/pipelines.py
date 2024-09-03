@@ -12,21 +12,29 @@ from .params_reader import ParamsInput
 logger = logging.getLogger(__name__)
 
 
-def prepare_files(save_directory: str | Path = Path("pipeline_results")):
+def prepare_results_directory(save_directory: str | Path | None) -> Path:
     """
     Prepare the directory for saving results by creating it if it doesn't exist and removing past model results.
 
     Args:
     -----
-        save_directory (str | Path, optional): Directory to save results to. Defaults to Path("pipeline_results").
+        save_directory (str | Path | None): Directory to save results to. Uses "mlcompare-results-Y-m-dTH-M-S" if set to None.
     """
-    if isinstance(save_directory, str):
-        save_directory = Path(save_directory)
-    save_directory.mkdir(exist_ok=True)
+    if save_directory is None:
+        current_datetime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
+        save_directory = Path(f"mlcompare-results-{current_datetime}")
+    else:
+        if isinstance(save_directory, str):
+            save_directory = Path(save_directory)
 
-    model_results_file = save_directory / "model_results.json"
-    if model_results_file.exists():
-        model_results_file.unlink()
+        if not save_directory.exists():
+            save_directory.mkdir()
+        else:
+            model_results = save_directory / "model_results.json"
+            if model_results.exists():
+                model_results.unlink()
+
+    return save_directory
 
 
 def data_exploration_pipeline():
@@ -36,24 +44,29 @@ def data_exploration_pipeline():
 def data_pipeline(
     dataset_params: ParamsInput,
     save_original_data: bool = True,
-    save_cleaned_data: bool = True,
-    save_directory: str | Path = Path("pipeline_results"),
+    save_processed_data: bool = True,
+    save_directory: str | Path | None = None,
 ) -> None:
     """
-    A pipeline for data retrieval and/or processing without any model training or evaluation.
+    A pipeline which only performs data retrieval and/or processing.
 
     Args:
     -----
         dataset_params (ParamsInput): Parameters for loading and processing datasets.
         save_original_data (bool, optional): Save original datasets. Defaults to True.
-        save_cleaned_data (bool, optional): Save cleaned datasets. Defaults to True.
-        save_directory (str | Path, optional): Directory to save results to. Defaults to Path("pipeline_results").
+        save_processed_data (bool, optional): Save processed datasets. Defaults to True.
+        save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    if isinstance(save_directory, str):
-        save_directory = Path(save_directory)
-    save_directory.mkdir(exist_ok=True)
+    prepared_directory = prepare_results_directory(save_directory)
 
-    process_datasets(dataset_params, save_directory, save_original_data, save_cleaned_data)
+    split_data = process_datasets(
+        dataset_params,
+        prepared_directory,
+        save_original_data,
+        save_processed_data,
+    )
+    for data in split_data:
+        pass
 
 
 def full_pipeline(
@@ -66,7 +79,7 @@ def full_pipeline(
     save_directory: str | Path | None = None,
 ) -> None:
     """
-    Executes a full pipeline for training and evaluating multiple models on multiple datasets.
+    A pipeline with data retrieval, processing, model training and model evaluation.
 
     Args:
     -----
@@ -75,17 +88,17 @@ def full_pipeline(
         task_type (Literal["classification", "regression"]): Type of task to be performed.
         custom_models (list[Any], optional): List of custom models to include in the pipeline. Defaults to None.
         save_original_data (bool, optional): Save original datasets. Defaults to True.
-        save_processed_data (bool, optional): Save cleaned datasets. Defaults to True.
-        save_directory (str | Path, optional): Directory to save results to. Defaults to Path("pipeline_results").
+        save_processed_data (bool, optional): Save processed datasets. Defaults to True.
+        save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    if save_directory is None:
-        current_datetime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-        save_directory = Path(f"mlcompare-results-{current_datetime}")
-    # prepare_files(save_directory)
+    prepared_directory = prepare_results_directory(save_directory)
 
     split_data = process_datasets(
-        dataset_params, save_directory, save_original_data, save_processed_data
+        dataset_params,
+        prepared_directory,
+        save_original_data,
+        save_processed_data,
     )
     for data in split_data:
-        process_models(model_params, data, task_type, save_directory)
+        process_models(model_params, data, task_type, prepared_directory)
         # pass custom models here ^^^
