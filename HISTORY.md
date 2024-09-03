@@ -1,4 +1,4 @@
-## v1.0.1 (2024-08-02)
+## v1.1.0 (2024-08-02)
 
 [GitHub release](https://github.com/MitchMedeiros/MLCompare/tag/v1.1.0)
 

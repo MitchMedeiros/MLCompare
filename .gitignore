@@ -35,7 +35,7 @@ __pycache__/
 tests.log
 testing.py
 testing.ipynb
-pipeline_results
+mlcompare-results-*
 tests/data/test.*
 
 # Other
