@@ -3,7 +3,7 @@ from __future__ import annotations as _annotations
 import logging
 import pickle
 from pathlib import Path
-from typing import Generator, Literal
+from typing import Literal
 
 import pandas as pd
 import sklearn
@@ -22,9 +22,7 @@ from sklearn.preprocessing import (
     TargetEncoder,
 )
 
-from ..params_reader import ParamsInput
 from .datasets import (
-    DatasetFactory,
     DatasetType,
     HuggingFaceDataset,
     KaggleDataset,
@@ -52,7 +50,7 @@ def validate_save_directory(save_directory: Path | str) -> Path:
     """
     if not isinstance(save_directory, (Path)):
         if not isinstance(save_directory, str):
-            raise ValueError("`save_directory` must be a string or Path object.")
+            raise TypeError("`save_directory` must be a string or Path object.")
         else:
             save_directory = Path(save_directory)
 
@@ -72,7 +70,7 @@ class DatasetProcessor:
 
     def __init__(self, dataset: DatasetType) -> None:
         if not isinstance(dataset, (KaggleDataset, LocalDataset, HuggingFaceDataset, OpenMLDataset)):
-            raise ValueError(
+            raise TypeError(
                 "`dataset` must be an instance of a KaggleDataset, LocalDataset, HuggingFaceDataset, or OpenMLDataset."
             )
 
@@ -98,9 +96,9 @@ class DatasetProcessor:
     def _train_test_split_data(self, data: pd.DataFrame, test_size: float = 0.2) -> None:
         """Splits the data into train and test sets and saves them as attributes for future processing."""
         if not isinstance(test_size, float):
-            raise ValueError("`test_size` must be a float.")
+            raise TypeError("`test_size` must be a float.")
         if test_size <= 0 or test_size >= 1:
-            raise ValueError("`test_size` must be between 0 and 1.")
+            raise TypeError("`test_size` must be between 0 and 1.")
 
         try:
             X, y = train_test_split(data, test_size=test_size, random_state=42)
@@ -136,7 +134,7 @@ class DatasetProcessor:
             ValueError: If missing values are found and `raise_exception` is True.
         """
         if not isinstance(raise_exception, bool):
-            raise ValueError("`raise_exception` must be a boolean.")
+            raise TypeError("`raise_exception` must be a boolean.")
 
         if self.nan:
 
@@ -323,9 +321,6 @@ class DatasetProcessor:
         self.train_data[columns] = scaler.fit_transform(self.train_data[columns])
         self.test_data[columns] = scaler.transform(self.test_data[columns])
 
-        # self.train_data[columns] = scaler.fit_transform(train_df[columns])
-        # self.test_data[columns] = scaler.transform(test_df[columns])
-
         logger.info(
             f"Columns: {columns} successfully regularized. Training split:\n{self.train_data.head(3)}"
         )
@@ -461,18 +456,23 @@ class DatasetProcessor:
             save_directory (str | Path): Directory to save the data to.
             file_format (Literal["parquet", "csv", "json", "pkl"], optional): Format to use when
             saving the data. Defaults to "parquet".
-            file_name_ending (str, optional): String to append to the end of the file name. Defaults to "".
+            file_name_ending (str, optional): String to append to the end of the file name in order to save the data
+        multiple times. Defaults to "".
 
         Returns:
         --------
             Path: Path to the saved data.
         """
         if not isinstance(file_format, str):
-            raise ValueError("`file_format` must be a string.")
+            raise TypeError("`file_format` must be a string.")
         if not isinstance(file_name_ending, str):
-            raise ValueError("`file_name_ending` must be a string.")
+            raise TypeError("`file_name_ending` must be a string.")
+        if not isinstance(save_directory, Path):
+            if not isinstance(save_directory, str):
+                raise TypeError("`save_directory` must be a string or Path object.")
+            else:
+                save_directory = Path(save_directory)
 
-        save_directory = validate_save_directory(save_directory)
         file_path = save_directory / f"{self.save_name}{file_name_ending}.{file_format}"
 
         if not overwrite:
@@ -546,10 +546,15 @@ class DatasetProcessor:
         --------
             Path: Path to the saved SplitData object.
         """
+        if not isinstance(save_directory, Path):
+            if not isinstance(save_directory, str):
+                raise TypeError("`save_directory` must be a string or Path object.")
+            else:
+                save_directory = Path(save_directory)
+
         X_train, X_test, y_train, y_test = self.split_target()
         split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
-        save_directory = validate_save_directory(save_directory)
         file_path = save_directory / f"{self.save_name}-split.pkl"
 
         if not overwrite:
@@ -589,9 +594,9 @@ class DatasetProcessor:
                 pd.DataFrame | pd.Series: Testing split target values.
         """
         if not isinstance(save_original, bool):
-            raise ValueError("`save_original` must be a boolean.")
+            raise TypeError("`save_original` must be a boolean.")
         if not isinstance(save_processed, bool):
-            raise ValueError("`save_processed` must be a boolean.")
+            raise TypeError("`save_processed` must be a boolean.")
 
         if save_original:
             self.save_data(
@@ -619,80 +624,3 @@ class DatasetProcessor:
             )
 
         return self.split_target()
-
-
-def process_datasets(
-    params_list: ParamsInput,
-    save_directory: str | Path,
-    save_original: bool = True,
-    save_processed: bool = True,
-) -> Generator[SplitDataTuple, None, None]:
-    """
-    Downloads and processes data from multiple datasets that have been validated.
-
-    Args:
-    -----
-        params_list (ParamsInput): List of dictionaries containing dataset parameters.
-        save_directory (str | Path): Directory to save the data to.
-        save_original (bool): Whether to save the original data.
-        save_processed (bool): Whether to save the processed, nonsplit data.
-
-    Returns:
-    --------
-        A Generator containing the split data for input into subsequent pipeline steps via iteration.
-    """
-    datasets = DatasetFactory(params_list)
-    for dataset in datasets:
-        try:
-            processor = DatasetProcessor(dataset)
-            split_data = processor.process_dataset(save_directory, save_original, save_processed)
-            yield split_data
-        except Exception:
-            logger.error("Failed to process dataset.")
-            raise
-
-
-def process_datasets_to_files(
-    params_list: ParamsInput,
-    save_directory: str | Path,
-    save_original: bool = True,
-    save_processed: bool = True,
-) -> list[Path]:
-    """
-    Downloads and processes data from multiple datasets that have been validated.
-
-    Args:
-    -----
-        datasets (list[KaggleDataset | LocalDataset]): List of datasets to process.
-        data_directory (str | Path): Directory to save the original and processed data.
-        save_original (bool): Whether to save the original data.
-        save_processed (bool): Whether to save the processed, nonsplit data.
-
-    Returns:
-    --------
-        list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
-    """
-    save_directory = validate_save_directory(save_directory)
-
-    split_data_paths = []
-    datasets = DatasetFactory(params_list)
-    for dataset in datasets:
-        try:
-            processor = DatasetProcessor(dataset)
-            X_train, X_test, y_train, y_test = processor.process_dataset(
-                save_directory, save_original, save_processed
-            )
-
-            file_path = save_directory / f"{processor.save_name}-split.pkl"
-            split_data_paths.append(file_path)
-        except Exception:
-            logger.error("Failed to process dataset.")
-            raise
-
-        split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
-
-        with open(file_path, "wb") as file:
-            pickle.dump(split_data_obj, file)
-        logger.info(f"Split data saved to: {file_path}")
-
-    return split_data_paths

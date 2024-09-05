@@ -5,14 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from .data.dataset_processor import process_datasets
-from .models.models import process_models
 from .params_reader import ParamsInput
+from .processing import process_datasets, process_models
 
 logger = logging.getLogger(__name__)
 
 
-def prepare_results_directory(save_directory: str | Path | None) -> Path:
+def prepare_directory(save_directory: str | Path | None) -> Path:
     """
     Prepare the directory for saving results by creating it if it doesn't exist and removing past model results.
 
@@ -33,6 +32,21 @@ def prepare_results_directory(save_directory: str | Path | None) -> Path:
             model_results = save_directory / "model_results.json"
             if model_results.exists():
                 model_results.unlink()
+
+    if isinstance(save_directory, str) or isinstance(save_directory, Path):
+        save_directory = Path(save_directory)
+
+        if not save_directory.exists():
+            save_directory.mkdir()
+        else:
+            model_results = save_directory / "model_results.json"
+            if model_results.exists():
+                model_results.unlink()
+    elif save_directory is None:
+        current_datetime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
+        save_directory = Path(f"mlcompare-results-{current_datetime}")
+    else:
+        raise TypeError("save_directory must be a string or Path object.")
 
     return save_directory
 
@@ -57,8 +71,7 @@ def data_pipeline(
         save_processed_data (bool, optional): Save processed datasets. Defaults to True.
         save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    prepared_directory = prepare_results_directory(save_directory)
-
+    prepared_directory = prepare_directory(save_directory)
     split_data = process_datasets(
         dataset_params,
         prepared_directory,
@@ -91,8 +104,7 @@ def full_pipeline(
         save_processed_data (bool, optional): Save processed datasets. Defaults to True.
         save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    prepared_directory = prepare_results_directory(save_directory)
-
+    prepared_directory = prepare_directory(save_directory)
     split_data = process_datasets(
         dataset_params,
         prepared_directory,
