@@ -7,7 +7,7 @@ import pytest
 
 from mlcompare import data_pipeline, full_pipeline
 
-logger = logging.getLogger("mlcompare")
+logger = logging.getLogger("mlcompare.pipelines")
 
 
 @pytest.fixture(scope="function")

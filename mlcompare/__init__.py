@@ -1,13 +1,16 @@
-from .data.dataset_processor import (
-    DatasetProcessor,
-    process_datasets,
-    process_datasets_to_files,
-)
+from .data.dataset_processor import DatasetProcessor
 from .data.datasets import DatasetFactory
 from .data.split_data import SplitData, load_split_data
-from .models.models import ModelFactory, process_models
+from .models.models import ModelFactory
 from .params_reader import ParamsReader
 from .pipelines import data_exploration_pipeline, data_pipeline, full_pipeline
+from .processing import (
+    append_json,
+    evaluate_prediction,
+    process_datasets,
+    process_datasets_to_files,
+    process_models,
+)
 
 __version__ = "1.1.0"
 __title__ = "MLCompare"
@@ -39,6 +42,8 @@ __all__ = [
     "DatasetProcessor",
     "DatasetFactory",
     "ModelFactory",
+    "append_json",
+    "evaluate_prediction",
     "process_models",
     "process_datasets",
     "process_datasets_to_files",

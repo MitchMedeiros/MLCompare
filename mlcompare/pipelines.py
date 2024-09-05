@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from .params_reader import ParamsInput
 from .processing import process_datasets, process_models
+from .results_writer import ResultsWriter
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +20,6 @@ def prepare_directory(save_directory: str | Path | None) -> Path:
     -----
         save_directory (str | Path | None): Directory to save results to. Uses "mlcompare-results-Y-m-dTH-M-S" if set to None.
     """
-    if save_directory is None:
-        current_datetime = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
-        save_directory = Path(f"mlcompare-results-{current_datetime}")
-    else:
-        if isinstance(save_directory, str):
-            save_directory = Path(save_directory)
-
-        if not save_directory.exists():
-            save_directory.mkdir()
-        else:
-            model_results = save_directory / "model_results.json"
-            if model_results.exists():
-                model_results.unlink()
-
     if isinstance(save_directory, str) or isinstance(save_directory, Path):
         save_directory = Path(save_directory)
 
@@ -71,10 +58,12 @@ def data_pipeline(
         save_processed_data (bool, optional): Save processed datasets. Defaults to True.
         save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    prepared_directory = prepare_directory(save_directory)
+    writer = ResultsWriter(save_directory)
+    results_directory = writer.create_directory()
+
     split_data = process_datasets(
         dataset_params,
-        prepared_directory,
+        results_directory,
         save_original_data,
         save_processed_data,
     )
@@ -104,13 +93,15 @@ def full_pipeline(
         save_processed_data (bool, optional): Save processed datasets. Defaults to True.
         save_directory (str | Path, optional): Directory to save results to. Defaults to "mlcompare-results-Y-m-dTH-M-S"
     """
-    prepared_directory = prepare_directory(save_directory)
+    writer = ResultsWriter(save_directory)
+    results_directory = writer.create_directory()
+
     split_data = process_datasets(
         dataset_params,
-        prepared_directory,
+        results_directory,
         save_original_data,
         save_processed_data,
     )
     for data in split_data:
-        process_models(model_params, data, task_type, prepared_directory)
+        process_models(model_params, data, task_type, results_directory)
         # pass custom models here ^^^

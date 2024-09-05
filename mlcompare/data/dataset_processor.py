@@ -22,6 +22,7 @@ from sklearn.preprocessing import (
     TargetEncoder,
 )
 
+from ..results_writer import ResultsWriter
 from .datasets import (
     DatasetType,
     HuggingFaceDataset,
@@ -34,28 +35,6 @@ from .split_data import SplitData, SplitDataTuple
 logger = logging.getLogger(__name__)
 
 sklearn.set_config(transform_output="pandas")
-
-
-def validate_save_directory(save_directory: Path | str) -> Path:
-    """
-    Validates the existence of a directory and creates one if it doesn't exist.
-
-    Args:
-    -----
-        save_directory (Path | str): Directory to save files to.
-
-    Returns:
-    --------
-        Path: Path to the directory.
-    """
-    if not isinstance(save_directory, (Path)):
-        if not isinstance(save_directory, str):
-            raise TypeError("`save_directory` must be a string or Path object.")
-        else:
-            save_directory = Path(save_directory)
-
-    save_directory.mkdir(exist_ok=True)
-    return save_directory
 
 
 class DatasetProcessor:
@@ -474,14 +453,7 @@ class DatasetProcessor:
                 save_directory = Path(save_directory)
 
         file_path = save_directory / f"{self.save_name}{file_name_ending}.{file_format}"
-
-        if not overwrite:
-            file_count = 1
-            while file_path.exists():
-                file_path = (
-                    save_directory / f"{self.save_name}{file_name_ending}-{file_count}.{file_format}"
-                )
-                file_count += 1
+        file_path = ResultsWriter().increment_name(file_path)
 
         try:
             df = pd.concat([self.train_data, self.test_data]).sort_index()
@@ -556,12 +528,7 @@ class DatasetProcessor:
         split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
         file_path = save_directory / f"{self.save_name}-split.pkl"
-
-        if not overwrite:
-            file_count = 1
-            while file_path.exists():
-                file_path = save_directory / f"{self.save_name}-split-{file_count}.pkl"
-                file_count += 1
+        file_path = ResultsWriter().increment_name(file_path)
 
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)

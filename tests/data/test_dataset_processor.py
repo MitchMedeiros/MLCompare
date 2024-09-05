@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from mlcompare import DatasetProcessor, load_split_data, process_datasets
+from mlcompare import DatasetProcessor, load_split_data
 from mlcompare.data.datasets import LocalDataset
 
 logger = logging.getLogger("mlcompare.data.dataset_processor")
@@ -24,7 +24,7 @@ def create_dataset_processor(data: dict, data_params: dict) -> DatasetProcessor:
         local_dataset = LocalDataset(**data_params)  # type: ignore
         processor = DatasetProcessor(dataset=local_dataset)
     finally:
-        os.remove(f"{path}")
+        os.remove(path)
 
     return processor
 
@@ -331,6 +331,7 @@ class TestDatasetProcessor:
 
     def test_save_data_parquet(self):
         processor = create_dataset_processor(self.data, self.data_params)
+        os.mkdir("save_testing")
 
         try:
             processor.save_data(save_directory="save_testing")
@@ -346,10 +347,9 @@ class TestDatasetProcessor:
         data_params1 = {"path": "test1/name_test.csv", "target": "C", "drop": ["A"]}
         data_params2 = {"path": "test2/name_test.csv", "target": "C", "drop": ["A"]}
 
-        test1_path = Path("test1")
-        test2_path = Path("test2")
-        test1_path.mkdir(exist_ok=True)
-        test2_path.mkdir(exist_ok=True)
+        os.mkdir("test1")
+        os.mkdir("test2")
+        os.mkdir("name_save_testing")
 
         try:
             processor1 = create_dataset_processor(self.data, data_params1)
@@ -370,6 +370,7 @@ class TestDatasetProcessor:
 
     def test_split_and_save_data(self):
         processor = create_dataset_processor(self.data, self.data_params)
+        os.mkdir("save_testing")
 
         try:
             file_path = processor.split_and_save_data(save_directory="save_testing")
@@ -379,10 +380,11 @@ class TestDatasetProcessor:
             assert isinstance(X_train, pd.DataFrame)
             assert isinstance(y_train, pd.Series)
         finally:
-            os.remove(file_path)
+            shutil.rmtree("save_testing")
 
     def test_process_dataset(self):
         processor = create_dataset_processor(self.data, self.data_params)
+        os.mkdir("save_testing")
 
         try:
             processor.process_dataset(save_directory="save_testing")
@@ -395,45 +397,11 @@ class TestDatasetProcessor:
     def test_process_dataset_invalid_save_original_type(self):
         processor = create_dataset_processor(self.data, self.data_params)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             processor.process_dataset(save_directory="save_testing", save_original=123)
 
     def test_process_dataset_invalid_save_processed_type(self):
         processor = create_dataset_processor(self.data, self.data_params)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             processor.process_dataset(save_directory="save_testing", save_processed=123)
-
-    def test_process_datasets(self):
-        params_list = [
-            {"type": "local", "path": "test1.csv", "target": "C", "drop": ["A"]},
-            {"type": "local", "path": "test2.csv", "target": "F", "drop": ["A"]},
-        ]
-
-        df = pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
-        df.to_csv("test1.csv", index=False)
-        df = pd.DataFrame({"A": [7, 8], "E": [9, 10], "F": [11, 12]})
-        df.to_csv("test2.csv", index=False)
-
-        try:
-            split_datasets = process_datasets(
-                params_list,
-                save_directory="save_testing",
-                save_original=False,
-                save_processed=False,
-            )
-
-            for X_train, X_test, y_train, y_test in split_datasets:
-                assert isinstance(X_train, pd.DataFrame)
-                assert isinstance(X_test, pd.DataFrame)
-                assert isinstance(y_train, pd.Series)
-                assert isinstance(y_test, pd.Series)
-                assert "A" not in X_train.columns
-                assert X_train.empty is False
-                assert X_test.empty is False
-                assert y_train.empty is False
-                assert y_test.empty is False
-
-        finally:
-            os.remove("test1.csv")
-            os.remove("test2.csv")

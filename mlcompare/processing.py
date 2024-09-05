@@ -1,3 +1,5 @@
+from __future__ import annotations as _annotations
+
 import json
 import logging
 import pickle
@@ -14,11 +16,12 @@ from sklearn.metrics import (
     root_mean_squared_error,
 )
 
-from .data.dataset_processor import DatasetProcessor, validate_save_directory
+from .data.dataset_processor import DatasetProcessor
 from .data.datasets import DatasetFactory
 from .data.split_data import SplitData, SplitDataTuple
 from .models.models import ModelFactory
 from .params_reader import ParamsInput
+from .results_writer import ResultsWriter
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +77,8 @@ def process_datasets_to_files(
     --------
         list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
     """
-    save_directory = validate_save_directory(save_directory)
+    writer = ResultsWriter(save_directory)
+    save_directory = writer.create_directory()
 
     split_data_paths = []
     datasets = DatasetFactory(params_list)
@@ -194,7 +198,8 @@ def append_json(results: dict[str, float], save_directory: str | Path) -> None:
     -----
         results (dict[str, float]): Results of the model evaluation.
     """
-    save_directory = validate_save_directory(save_directory)
+    writer = ResultsWriter(save_directory)
+    save_directory = writer.create_directory()
     file_path = save_directory / "model_results.json"
 
     try:

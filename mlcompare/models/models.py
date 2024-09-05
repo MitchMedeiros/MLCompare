@@ -1,27 +1,14 @@
 from __future__ import annotations as _annotations
 
 import inspect
-import json
 import logging
 from abc import ABC, abstractmethod
 from importlib import import_module
-from pathlib import Path
 from typing import Any, Generator, Literal, TypeAlias
 
 import pandas as pd
 from pydantic import BaseModel
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    f1_score,
-    precision_score,
-    r2_score,
-    recall_score,
-    root_mean_squared_error,
-)
 
-from ..data.dataset_processor import validate_save_directory
-from ..data.split_data import SplitDataTuple
 from ..params_reader import ParamsInput, ParamsReader
 
 logger = logging.getLogger(__name__)
@@ -332,6 +319,3 @@ class ModelFactory:
                     "that takes in train-test split data and returns an nd.array or pd.Series of "
                     "predictions. See the documentation for more details."
                 )
-
-
-
