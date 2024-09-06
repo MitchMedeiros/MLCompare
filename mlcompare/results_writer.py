@@ -1,5 +1,6 @@
 from __future__ import annotations as _annotations
 
+import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -80,3 +81,36 @@ class ResultsWriter:
             self.clear_model_results()
 
         return self.directory_name
+
+    def append_model_results(self, results: dict[str, float]) -> None:
+        """
+        Append the results of model evaluation to a JSON file.
+
+        Args:
+        -----
+            results (dict[str, float]): Results of the model evaluation.
+        """
+        if self.directory_name is None:
+            self.directory_name = self.generate_default_directory()
+
+        file_path = self.directory_name / "model_results.json"
+
+        try:
+            with open(file_path, "r") as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            data = []
+        except json.JSONDecodeError:
+            data = []
+
+        if not isinstance(data, list):
+            raise ValueError("The existing data in the model_results.json file is not a list.")
+
+        if isinstance(results, dict):
+            data.append(results)
+        else:
+            raise TypeError("The list elements in model_results.json are not dictionaries.")
+
+        with open(file_path, "w") as file:
+            json.dump(data, file, indent=4)
+        logger.info(f"Model results appended to: {file_path}")

@@ -1,6 +1,5 @@
 from __future__ import annotations as _annotations
 
-import json
 import logging
 import pickle
 from pathlib import Path
@@ -148,11 +147,11 @@ def evaluate_prediction(
             return {
                 "model": model_name,
                 "data split": data_split,
-                "accuracy": accuracy,  # balanced classification
-                "balanced accuracy": balanced_accuracy,  # imbalanced classification
-                "F1": f1,  # imbalanced classification
-                "recall": recall,  # classification focused on minimizing false negatives
-                "precision": precision,  # classification focused on minimizing false positives
+                "accuracy": accuracy,
+                "balanced accuracy": balanced_accuracy,
+                "F1": f1,
+                "recall": recall,
+                "precision": precision,
             }
         case "multiclass":
             accuracy = accuracy_score(y_test, y_pred)
@@ -190,38 +189,6 @@ def evaluate_prediction(
             raise ValueError("Task type must be one of 'binary', 'multiclass', or 'regression'.")
 
 
-def append_json(results: dict[str, float], save_directory: str | Path) -> None:
-    """
-    Append the results of model evaluation to a JSON file.
-
-    Args:
-    -----
-        results (dict[str, float]): Results of the model evaluation.
-    """
-    writer = ResultsWriter(save_directory)
-    save_directory = writer.create_directory()
-    file_path = save_directory / "model_results.json"
-
-    try:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        data = []
-    except json.JSONDecodeError:
-        data = []
-
-    if not isinstance(data, list):
-        raise ValueError("The existing data in the JSON file is not a list.")
-
-    if isinstance(results, dict):
-        data.append(results)
-    else:
-        raise TypeError("`results` should be a dictionary.")
-
-    with open(file_path, "w") as file:
-        json.dump(data, file, indent=4)
-
-
 def process_models(
     params_list: ParamsInput,
     split_data: SplitDataTuple,
@@ -243,6 +210,9 @@ def process_models(
     """
     X_train, X_test, y_train, y_test = split_data
 
+    writer = ResultsWriter(save_directory)
+    writer.create_directory()
+
     models = ModelFactory(params_list)
     for model in models:
         try:
@@ -254,7 +224,7 @@ def process_models(
                 model._ml_model.__class__.__name__,
                 task_type,
             )
-            append_json(model_results, save_directory)
+            writer.append_model_results(model_results)
         except Exception:
             logger.error(f"Failed to process model: {model._ml_model.__class__.__name__}")
             raise
