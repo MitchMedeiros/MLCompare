@@ -32,12 +32,6 @@
 
 <br>
 
-<div align="center">
-<b>This library is still in early development. Expect many more features to come :D</b>
-</div>
-
-<br>
-
 MLCompare is a Python package for running model comparison pipelines, with the aim of being both simple and flexible. It supports multiple popular ML libraries, retrieval from multiple online dataset repositories, common data processing steps, and results visualization. Additionally, it allows for using your own models and datasets within the pipelines.
 
 <table align="center">
@@ -132,7 +126,33 @@ models = [
     }
 ]
 
-mlcompare.full_pipeline(datasets, models)
+mlcompare.full_pipeline(datasets, models, "regression")
 ```
 
-In the case of the XGBoost model we passed in our own parameter values rather than using the defaults.
+In the case of the XGBoost model some non-default parameter values were used.
+
+<h2>Planned Additions</h2>
+
+<h3>Version 1.3</h3>
+<ul>
+    <li>LightGBM support</li>
+    <li>CatBoost support</li>
+    <li>Model results graphing and visualization</li>
+    <li>Improved documentation</li>
+    <li>Support for presplit data</li>
+</ul>
+
+<h3>Version 1.4</h3>
+<ul>
+    <li>PyTorch support</li>
+    <li>TensorFlow support</li>
+    <li>Additional dataset sources</li>
+    <li>Built-in model and dataset collections for quick testing of similar model types/datasets</li>
+    <li>Optional pipeline caching</li>
+    <li>Optional trained model saving</li>
+</ul>
+
+<h3>Version 1.5</h3>
+<ul>
+    <li>S3 Support</li>
+</ul>
