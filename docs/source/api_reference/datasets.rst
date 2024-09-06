@@ -3,6 +3,9 @@ Datasets
 
 .. currentmodule:: mlcompare.data
 
+The various Dataset classes primarily serve to turn a source of data into a Pandas DataFrame. Additionally, they 
+pass any user provided parameters to the DatasetProcessor.
+
 Classes
 -------
 

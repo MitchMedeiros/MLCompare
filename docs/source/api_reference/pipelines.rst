@@ -15,17 +15,17 @@ Functions
    data_exploration_pipeline
 
 Full Pipeline
-===========
+=============
 
 .. autoclass:: mlcompare.full_pipeline
    :members:
    :undoc-members:
    :show-inheritance:
 
-Data Exploration Pipeline
-=========================
+Data Pipeline
+=============
 
-.. autoclass:: mlcompare.data_exploration_pipeline
+.. autoclass:: mlcompare.data_pipeline
    :members:
    :undoc-members:
    :show-inheritance:

@@ -3,6 +3,8 @@ Data Processing
 
 .. currentmodule:: mlcompare.data
 
+The DatasetProcessor class takes in a Dataset instance and performs data preparation on the constructed Pandas DataFrame.
+It heavily utilizes Scikit-learn for its data processing capabilities.
 
 Classes
 -------
@@ -11,17 +13,8 @@ Classes
    :toctree: generated/
    :template: custom_class.rst
 
-   data_processor.DataProcessor
    dataset_processor.DatasetProcessor
    split_data.SplitData
-
-DataProcessor
-============
-
-.. autoclass:: mlcompare.DataProcessor
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 DatasetProcessor
 =============
