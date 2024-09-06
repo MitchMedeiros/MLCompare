@@ -2,6 +2,7 @@
     <img src="https://d1nheu3uhuz51e.cloudfront.net/mlcompare/logo_text_1k.png" width="500" alt="MLCompare Logo">
 </p>
 
+
 <div align="center">
 <a href="https://pypi.org/project/mlcompare"><img 
     alt="Supported Python Versions"
