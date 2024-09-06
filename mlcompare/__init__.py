@@ -5,12 +5,12 @@ from .models.models import ModelFactory
 from .params_reader import ParamsReader
 from .pipelines import data_exploration_pipeline, data_pipeline, full_pipeline
 from .processing import (
-    append_json,
     evaluate_prediction,
     process_datasets,
     process_datasets_to_files,
     process_models,
 )
+from .results_writer import ResultsWriter
 
 __version__ = "1.1.0"
 __title__ = "MLCompare"
@@ -38,11 +38,11 @@ __keywords__ = [
 ]
 
 __all__ = [
+    "ResultsWriter",
     "ParamsReader",
     "DatasetProcessor",
     "DatasetFactory",
     "ModelFactory",
-    "append_json",
     "evaluate_prediction",
     "process_models",
     "process_datasets",
