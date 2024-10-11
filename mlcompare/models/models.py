@@ -2,8 +2,10 @@ from __future__ import annotations as _annotations
 
 import inspect
 import logging
+import pickle
 from abc import ABC, abstractmethod
 from importlib import import_module
+from pathlib import Path
 from typing import Any, Generator, Literal, TypeAlias
 
 import pandas as pd
@@ -51,6 +53,11 @@ class LibraryModel(ABC, BaseModel):
 
     @abstractmethod
     def predict(self, X_test: pd.DataFrame): ...
+
+    def save(self, save_directory: Path):
+        save_file = save_directory / f"{self.name}.pkl"
+        with open(save_file, "wb") as file:
+            pickle.dump(self._ml_model, file)
 
     def resolve_model_submodule(self) -> Any | None:
         imported_library = import_module(self._library)
