@@ -8,6 +8,7 @@ import pytest
 
 from mlcompare import DatasetProcessor, load_split_data
 from mlcompare.data.datasets import LocalDataset
+from mlcompare.results_writer import ResultsWriter
 
 logger = logging.getLogger("mlcompare.data.dataset_processor")
 
@@ -331,10 +332,11 @@ class TestDatasetProcessor:
 
     def test_save_data_parquet(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        os.mkdir("save_testing")
+        writer = ResultsWriter("save_testing")
+        writer.create_directory()
 
         try:
-            processor.save_data(save_directory="save_testing")
+            processor.save_data(writer)
             assert Path("save_testing/integer_data.parquet").exists()
 
             df = pd.read_parquet("save_testing/integer_data.parquet")
@@ -349,7 +351,9 @@ class TestDatasetProcessor:
 
         os.mkdir("test1")
         os.mkdir("test2")
-        os.mkdir("name_save_testing")
+
+        writer = ResultsWriter("name_save_testing")
+        writer.create_directory()
 
         try:
             processor1 = create_dataset_processor(self.data, data_params1)
@@ -357,8 +361,8 @@ class TestDatasetProcessor:
 
             # Save the DataFrames to the same directory and check that they are saved with different names
             processor1.drop_columns()
-            processor1.save_data("name_save_testing", overwrite=False)
-            processor2.save_data("name_save_testing", overwrite=False)
+            processor1.save_data(writer, overwrite=False)
+            processor2.save_data(writer, overwrite=False)
 
             assert Path("name_save_testing/name_test.parquet").exists()
             assert Path("name_save_testing/name_test-1.parquet").exists()
@@ -370,10 +374,11 @@ class TestDatasetProcessor:
 
     def test_split_and_save_data(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        os.mkdir("save_testing")
+        writer = ResultsWriter("save_testing")
+        writer.create_directory()
 
         try:
-            file_path = processor.split_and_save_data(save_directory="save_testing")
+            file_path = processor.split_and_save_data(writer)
             assert file_path.exists()
 
             X_train, X_test, y_train, y_test = load_split_data(file_path)
@@ -384,10 +389,11 @@ class TestDatasetProcessor:
 
     def test_process_dataset(self):
         processor = create_dataset_processor(self.data, self.data_params)
-        os.mkdir("save_testing")
+        writer = ResultsWriter("save_testing")
+        writer.create_directory()
 
         try:
-            processor.process_dataset(save_directory="save_testing")
+            processor.process_dataset(writer)
 
             assert Path("save_testing/integer_data-original.parquet").exists()
             assert Path("save_testing/integer_data-processed.parquet").exists()

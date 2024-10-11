@@ -19,7 +19,7 @@ def setup_cleanup_directories(request):
         new_dirs = current_dirs - initial_dirs
 
         for directory in new_dirs:
-            if directory.startswith("mlcompare-results-"):
+            if directory.startswith("mlc-2") or directory.startswith("mlcompare-results-"):
                 shutil.rmtree(directory, ignore_errors=True)
 
     request.addfinalizer(cleanup)

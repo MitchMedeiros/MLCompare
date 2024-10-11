@@ -4,6 +4,7 @@ import os
 import pandas as pd
 
 from mlcompare.processing import process_datasets  # process_models
+from mlcompare.results_writer import ResultsWriter
 
 logger = logging.getLogger("mlcompare.processing")
 
@@ -19,13 +20,11 @@ def test_process_datasets():
     df = pd.DataFrame({"A": [7, 8], "E": [9, 10], "F": [11, 12]})
     df.to_csv("test2.csv", index=False)
 
+    writer = ResultsWriter("save_testing")
+    writer.create_directory()
+
     try:
-        split_datasets = process_datasets(
-            params_list,
-            save_directory="save_testing",
-            save_original=False,
-            save_processed=False,
-        )
+        split_datasets = process_datasets(params_list, writer, save_original=False, save_processed=False)
 
         for X_train, X_test, y_train, y_test in split_datasets:
             assert isinstance(X_train, pd.DataFrame)
