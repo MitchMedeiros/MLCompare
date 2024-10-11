@@ -6,8 +6,8 @@ from .params_reader import ParamsReader
 from .pipelines import data_exploration_pipeline, data_pipeline, full_pipeline
 from .processing import (
     evaluate_prediction,
+    process_and_split_datasets,
     process_datasets,
-    process_datasets_to_files,
     process_models,
 )
 from .results_writer import ResultsWriter
@@ -46,7 +46,7 @@ __all__ = [
     "evaluate_prediction",
     "process_models",
     "process_datasets",
-    "process_datasets_to_files",
+    "process_and_split_datasets",
     "data_exploration_pipeline",
     "data_pipeline",
     "full_pipeline",

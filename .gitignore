@@ -35,8 +35,10 @@ __pycache__/
 tests.log
 testing.py
 testing.ipynb
-mlcompare-results-*
 tests/data/test.*
+mlc-2*
+mlcompare-results-*
+local_dataset.csv
 
 # Other
 .DS_Store

@@ -70,7 +70,8 @@ class DatasetProcessor:
         self.quantile_transform_normal = dataset.quantile_transform_normal
         self.normalize = dataset.normalize
 
-        self._train_test_split_data(data=dataset.get_data())
+        data = dataset.get_data()
+        self._train_test_split_data(data)
 
     def _train_test_split_data(self, data: pd.DataFrame, test_size: float = 0.2) -> None:
         """Splits the data into train and test sets and saves them as attributes for future processing."""
@@ -422,7 +423,7 @@ class DatasetProcessor:
 
     def save_data(
         self,
-        save_directory: str | Path,
+        writer: ResultsWriter,
         file_format: Literal["parquet", "csv", "json", "pkl"] = "parquet",
         file_name_ending: str = "",
         overwrite: bool = True,
@@ -446,14 +447,9 @@ class DatasetProcessor:
             raise TypeError("`file_format` must be a string.")
         if not isinstance(file_name_ending, str):
             raise TypeError("`file_name_ending` must be a string.")
-        if not isinstance(save_directory, Path):
-            if not isinstance(save_directory, str):
-                raise TypeError("`save_directory` must be a string or Path object.")
-            else:
-                save_directory = Path(save_directory)
 
-        file_path = save_directory / f"{self.save_name}{file_name_ending}.{file_format}"
-        file_path = ResultsWriter().increment_name(file_path)
+        file_path = writer.directory_name / f"{self.save_name}{file_name_ending}.{file_format}"
+        file_path = writer.increment_name(file_path)
 
         try:
             df = pd.concat([self.train_data, self.test_data]).sort_index()
@@ -506,7 +502,7 @@ class DatasetProcessor:
         )
         return X_train, X_test, y_train, y_test
 
-    def split_and_save_data(self, save_directory: str | Path, overwrite: bool = True) -> Path:
+    def split_and_save_data(self, writer: ResultsWriter, overwrite: bool = True) -> Path:
         """
         Splits the data and saves it to a single pickle file as a SplitData object.
 
@@ -518,17 +514,11 @@ class DatasetProcessor:
         --------
             Path: Path to the saved SplitData object.
         """
-        if not isinstance(save_directory, Path):
-            if not isinstance(save_directory, str):
-                raise TypeError("`save_directory` must be a string or Path object.")
-            else:
-                save_directory = Path(save_directory)
-
         X_train, X_test, y_train, y_test = self.split_target()
         split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
 
-        file_path = save_directory / f"{self.save_name}-split.pkl"
-        file_path = ResultsWriter().increment_name(file_path)
+        file_path = writer.directory_name / f"{self.save_name}-split.pkl"
+        file_path = writer.increment_name(file_path)
 
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)
@@ -537,7 +527,7 @@ class DatasetProcessor:
 
     def process_dataset(
         self,
-        save_directory: str | Path,
+        writer: ResultsWriter,
         save_original: bool = True,
         save_processed: bool = True,
         overwrite: bool = True,
@@ -566,9 +556,7 @@ class DatasetProcessor:
             raise TypeError("`save_processed` must be a boolean.")
 
         if save_original:
-            self.save_data(
-                save_directory=save_directory, file_name_ending="-original", overwrite=overwrite
-            )
+            self.save_data(writer, file_name_ending="-original", overwrite=overwrite)
 
         self.drop_columns()
         self.handle_nan()
@@ -586,8 +574,6 @@ class DatasetProcessor:
         self.normalize_columns()
 
         if save_processed:
-            self.save_data(
-                save_directory=save_directory, file_name_ending="-processed", overwrite=overwrite
-            )
+            self.save_data(writer, file_name_ending="-processed", overwrite=overwrite)
 
         return self.split_target()

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def process_datasets(
     params_list: ParamsInput,
-    save_directory: str | Path,
+    writer: ResultsWriter,
     save_original: bool = True,
     save_processed: bool = True,
 ) -> Generator[SplitDataTuple, None, None]:
@@ -37,7 +37,7 @@ def process_datasets(
     Args:
     -----
         params_list (ParamsInput): List of dictionaries containing dataset parameters.
-        save_directory (str | Path): Directory to save the data to.
+        writer: ResultsWriter for save directory management.
         save_original (bool): Whether to save the original data.
         save_processed (bool): Whether to save the processed, nonsplit data.
 
@@ -49,16 +49,16 @@ def process_datasets(
     for dataset in datasets:
         try:
             processor = DatasetProcessor(dataset)
-            split_data = processor.process_dataset(save_directory, save_original, save_processed)
+            split_data = processor.process_dataset(writer, save_original, save_processed)
             yield split_data
         except Exception:
             logger.error("Failed to process dataset.")
             raise
 
 
-def process_datasets_to_files(
+def process_and_split_datasets(
     params_list: ParamsInput,
-    save_directory: str | Path,
+    writer: ResultsWriter,
     save_original: bool = True,
     save_processed: bool = True,
 ) -> list[Path]:
@@ -68,7 +68,7 @@ def process_datasets_to_files(
     Args:
     -----
         datasets (list[KaggleDataset | LocalDataset]): List of datasets to process.
-        data_directory (str | Path): Directory to save the original and processed data.
+        writer: ResultsWriter for save directory management.
         save_original (bool): Whether to save the original data.
         save_processed (bool): Whether to save the processed, nonsplit data.
 
@@ -76,26 +76,23 @@ def process_datasets_to_files(
     --------
         list[Path]: List of paths to the saved split data for input into subsequent pipeline steps.
     """
-    writer = ResultsWriter(save_directory)
-    save_directory = writer.create_directory()
-
     split_data_paths = []
+
     datasets = DatasetFactory(params_list)
     for dataset in datasets:
         try:
             processor = DatasetProcessor(dataset)
             X_train, X_test, y_train, y_test = processor.process_dataset(
-                save_directory, save_original, save_processed
+                writer, save_original, save_processed
             )
 
-            file_path = save_directory / f"{processor.save_name}-split.pkl"
+            file_path = writer.directory_name / f"{processor.save_name}-split.pkl"
             split_data_paths.append(file_path)
         except Exception:
             logger.error("Failed to process dataset.")
             raise
 
         split_data_obj = SplitData(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test)
-
         with open(file_path, "wb") as file:
             pickle.dump(split_data_obj, file)
         logger.info(f"Split data saved to: {file_path}")
@@ -192,8 +189,9 @@ def evaluate_prediction(
 def process_models(
     params_list: ParamsInput,
     split_data: SplitDataTuple,
+    writer: ResultsWriter,
     task_type: Literal["classification", "regression"],
-    save_directory: str | Path,
+    save_models: Literal["all", "best", "none"] = "none",
 ) -> None:
     """
     Train and evaluate models on a dataset.
@@ -203,6 +201,8 @@ def process_models(
         params_list (ParamsInput): List of dictionaries containing model parameters.
         split_data (SplitDataTuple): Tuple containing the training and testing data split by features and target.
         task_type (Literal["classification", "regression"]): Type of data the model is making predictions for.
+        writer: ResultsWriter for save directory management.
+        save_models (Literal["all", "best", "none"]): Save all models, only the best model, or none.
 
     Raises:
     -------
@@ -210,9 +210,7 @@ def process_models(
     """
     X_train, X_test, y_train, y_test = split_data
 
-    writer = ResultsWriter(save_directory)
-    writer.create_directory()
-
+    best_accuracy = 0
     models = ModelFactory(params_list)
     for model in models:
         try:
@@ -225,6 +223,24 @@ def process_models(
                 task_type,
             )
             writer.append_model_results(model_results)
+
+            if save_models == "all":
+                model.save(writer.directory_name)
+            elif save_models == "best":
+                if model_results["accuracy"] > best_accuracy:
+                    for file in writer.directory_name.glob("*.pkl"):
+                        if file.root in model_results["model"]:
+                            file.unlink()
+
+                    model.save(writer.directory_name)
+                    best_accuracy = model_results["accuracy"]
         except Exception:
             logger.error(f"Failed to process model: {model._ml_model.__class__.__name__}")
             raise
+
+
+def load_model():
+    """
+    Loads a trained model from a pickle file,
+    """
+    pass
