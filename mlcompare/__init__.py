@@ -12,7 +12,7 @@ from .processing import (
 )
 from .results_writer import ResultsWriter
 
-__version__ = "1.2.0"
+__version__ = "1.2.2"
 __title__ = "MLCompare"
 __author__ = "Mitchell Medeiros"
 __license__ = "MIT"

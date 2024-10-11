@@ -1,3 +1,14 @@
+## v1.2.2 (2024-08-02)
+
+[GitHub release](https://github.com/MitchMedeiros/MLCompare/tag/v1.2.2)
+
+### Pipelines
+- Added the ability to save all or only the most accurate model with `full_pipeline`
+
+### Files
+- Changed the default naming for the directory where data, models, and results are saved
+- Cleaned up the implementation of directory creation using ResultsWriter
+
 ## v1.2.0 (2024-08-02)
 
 [GitHub release](https://github.com/MitchMedeiros/MLCompare/tag/v1.2.0)
